@@ -1,0 +1,7 @@
+backup/
+node_modules/
+src/ToDo.txt
+src/document/css-document
+src/document/experiments
+*.png
+README.md
