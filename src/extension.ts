@@ -68,11 +68,11 @@ function extractHtmlAndCssBlocks(): {
 function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<number, informationOfProperties>(),
   indexCounter = { value: 0 }): Map<number, informationOfProperties> {
   //nur vorübergehend
-  const indent = " ".repeat(depth * 2);
 
   const vscodePositionStyle = node.sourceCodeLocation;
+
   if (vscodePositionStyle && node.nodeName !== "#text") {
-    console.log(`${node.nodeName} [${vscodePositionStyle.startLine}, ${vscodePositionStyle.startCol}] - [${vscodePositionStyle.endLine}, ${vscodePositionStyle.endCol}]`);
+    //console.log(`${node.nodeName} [${vscodePositionStyle.startLine}, ${vscodePositionStyle.startCol}] - [${vscodePositionStyle.endLine}, ${vscodePositionStyle.endCol}]`);
     offsetsOfPropertiesMap.set(indexCounter.value++, {
       propertyName: node.nodeName, 
       positions : {
@@ -83,31 +83,33 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
       }
       })
   } else {
-    console.log(`${node.nodeName}`);
+    console.error(`didn't find a valid html tag, found: ${node.nodeName}`);
   }
 
   // Attribute + deren Positionen
   if (node.attrs && node.attrs.length > 0) {
+    
     for (const attr of node.attrs) {
-      const childVscodePositionStyle = vscodePositionStyle?.attrs?.[attr.name]; // <- positions for this attribute
-      if (childVscodePositionStyle) {
-        console.log(
-          `${attr.name}=${JSON.stringify(attr.value)} ` +
-          `[${childVscodePositionStyle.startLine}, ${childVscodePositionStyle.startCol}] - [${childVscodePositionStyle.endLine}, ${childVscodePositionStyle.endCol}]`
-          
-        );
+      
+      const nodeChild = vscodePositionStyle?.attrs?.[attr.name]; // <- positions for this attribute
+      
+      if (nodeChild) {
+        // console.log(
+        //   `${attr.name}=${JSON.stringify(attr.value)} ` +
+        //   `[${childVscodePositionStyle.startLine}, ${childVscodePositionStyle.startCol}] - [${childVscodePositionStyle.endLine}, ${childVscodePositionStyle.endCol}]`
+        // );
         offsetsOfPropertiesMap.set(indexCounter.value++, { 
           propertyName: attr.name, 
           positions : {
-            startCol:childVscodePositionStyle.startTag?.startCol ?? childVscodePositionStyle.startCol, 
-            startLine: childVscodePositionStyle.startTag?.startLine ?? childVscodePositionStyle.startLine, 
-            endCol: childVscodePositionStyle.startTag?.endCol ?? childVscodePositionStyle.endCol, 
-            endLine:  childVscodePositionStyle.startTag?.endLine ?? childVscodePositionStyle.endLine
+            startCol:nodeChild.startTag?.startCol ?? nodeChild.startCol, 
+            startLine: nodeChild.startTag?.startLine ?? nodeChild.startLine, 
+            endCol: nodeChild.startTag?.endCol ?? nodeChild.endCol, 
+            endLine:  nodeChild.startTag?.endLine ?? nodeChild.endLine
           } 
         });
       } 
       else {
-        console.log(`${attr.name}=${JSON.stringify(attr.value)}`);
+        console.error(`didn't find a valid html tag, found: ${attr.name}=${JSON.stringify(attr.value)}`);
       }
     }
   }
@@ -154,7 +156,8 @@ function diagnosticPrinter(ps:Parse5,HtmlTemplateArray: Array<{ tag: string; con
                 absoluteEndLine, absoluteEndCol
               )
             ),
-            `Propertie ${informationOfProperties.propertyName} is unknown.`,
+            `Propertie ${informationOfProperties.propertyName} is unknown.
+            Check for typos.`,
             vscode.DiagnosticSeverity.Warning
           );
           diagnosticCollection.push(diagnostic);
@@ -177,7 +180,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const disposable = vscode.commands.registerCommand("helloworld.helloWorld", () => 
     {
-    vscode.window.showInformationMessage("Hello World (Validation aktiv)!");
+    vscode.window.showInformationMessage("Html validator is now active");
     const editor = vscode.window.activeTextEditor;
     if (editor) 
       {
