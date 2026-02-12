@@ -1,7 +1,7 @@
 
 export class TagContext {
     static ALLOWED_TAGS = new Set<string>([ // in lit plugin suchen, da wird eine funktion verwendet die alle html tags zurück gibt
-"/div",".checked","html","head","body","title","meta","link","style","script",
+".checked","html","head","body","title","meta","link","style","script",
 "h1","h2","h3","h4","h5","h6","p","br","hr","span","div","pre","blockquote","address",
 "strong","em","b","i","u","small","mark","sub","sup","code","kbd","samp","var","del","ins",
 "a","img","audio","video","source","track","picture","figure","figcaption",
