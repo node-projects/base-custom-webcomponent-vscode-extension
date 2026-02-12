@@ -10,20 +10,30 @@ import { parse } from "node-html-parser";
 import { TagContext } from "./utils/allowed-tags";
 import { error } from "console";
 //import arrayToTree from "performant-array-to-tree";
-const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
+
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
-const document = vscode.window.activeTextEditor!.document;
 type positionOfContent = { startPos: number; endPos: number };
-type positionOfContentVscode = { startLine: number; startCol: number; endLine: number; endCol: number };
-type informationOfProperties = {propertyName: string;positions: positionOfContentVscode;};
+type positionOfContentRangeFormat = { startLine: number; startCol: number; endLine: number; endCol: number };
+type informationOfProperties = { propertyName: string; positions: positionOfContentRangeFormat;};
+// error collection of vs code
+const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
+// current open document in vs code
+const document = vscode.window.activeTextEditor!.document;
+// Array of allowed Tags
 const tagContext = new TagContext();
 
-function extractHtmlAndCssBlocks(): {contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>,
-                                contentArrayOfCssTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>} 
+function extractHtmlAndCssBlocks(): {
+  contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>,
+  contentArrayOfCssTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>
+} 
 {
-  const text = document.getText();
-  const templatesHtml = extractHtmlTemplates(text);
-  const templatesCss = extractCssTemplates(text);
+  // vs code document text
+  const documentText = document.getText();
+  // extracted html templates found in documentText
+  const templatesHtml = extractHtmlTemplates(documentText);
+  // extracted css templates found in documentText
+  const templatesCss = extractCssTemplates(documentText);
+  // Arrays to return
   const contentArrayOfHtmlTemplates: Array<{ tag: string; content: string; Pos: positionOfContent }> = [];
   const contentArrayOfCssTemplates: Array<{ tag: string; content: string; Pos: positionOfContent }> = [];
 
@@ -48,7 +58,10 @@ function extractHtmlAndCssBlocks(): {contentArrayOfHtmlTemplates:Array<{ tag: st
                          template.content)
     }
   );
-  return {contentArrayOfCssTemplates:contentArrayOfCssTemplates,contentArrayOfHtmlTemplates:contentArrayOfHtmlTemplates};
+  return {
+    contentArrayOfCssTemplates: contentArrayOfCssTemplates,
+    contentArrayOfHtmlTemplates: contentArrayOfHtmlTemplates
+  };
 }
 
 
@@ -69,31 +82,6 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
         endLine:  vscodePositionStyle.startTag?.endLine ?? vscodePositionStyle.endCol
       }
       })
-    //   if (vscodePositionStyle.endTag) {
-    //     const start = new vscode.Position(
-    //       vscodePositionStyle.endTag.startLine, 
-    //       vscodePositionStyle.endTag.startCol
-    //     );
-    //     const end = new vscode.Position(
-    //       vscodePositionStyle.endTag.endLine, 
-    //       vscodePositionStyle.endTag.endCol-2
-    //     );
-    //     const propertyNameFromTheDocument = document.getText(
-    //       new vscode.Range(
-    //         start,end
-    //       )
-    //     );
-    //     offsetsOfPropertiesMap.set(indexCounter.value++, {
-    //       propertyName: propertyNameFromTheDocument, 
-    //       positions : {
-    //         startCol:vscodePositionStyle.endTag?.startCol ?? vscodePositionStyle.startCol, 
-    //         startLine: vscodePositionStyle.endTag?.startLine ?? vscodePositionStyle.startLine, 
-    //         endCol: vscodePositionStyle.endTag?.endCol ?? vscodePositionStyle.endCol, 
-    //         endLine:  vscodePositionStyle.endTag?.endLine ?? vscodePositionStyle.endCol
-    //   }
-    //   })
-    // }
-    //   ;
   } else {
     console.log(`${node.nodeName}`);
   }
@@ -118,31 +106,6 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
           } 
         });
       } 
-      // if (childVscodePositionStyle.endTag) {
-      //   const start = new vscode.Position(
-      //     childVscodePositionStyle.endTag.startLine, 
-      //     childVscodePositionStyle.endTag.startCol
-      //   );
-      //   const end = new vscode.Position(
-      //     childVscodePositionStyle.endTag.endLine, 
-      //     childVscodePositionStyle.endTag.endCol-1
-      //   );
-      //   const propertyNameFromTheDocument = document.getText(
-      //     new vscode.Range(
-      //       start,end
-      //     )
-      //   );
-      //   offsetsOfPropertiesMap.set(indexCounter.value++, {
-      //     propertyName: propertyNameFromTheDocument, 
-      //     positions : {
-      //       startCol:childVscodePositionStyle.endTag?.startCol ?? childVscodePositionStyle.startCol, 
-      //       startLine: childVscodePositionStyle.endTag?.startLine ?? childVscodePositionStyle.startLine, 
-      //       endCol: childVscodePositionStyle.endTag?.endCol ?? childVscodePositionStyle.endCol, 
-      //       endLine:  childVscodePositionStyle.endTag?.endLine ?? childVscodePositionStyle.endCol
-      //     }
-      //   })
-      // }
-      
       else {
         console.log(`${attr.name}=${JSON.stringify(attr.value)}`);
       }
@@ -156,11 +119,10 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
   return offsetsOfPropertiesMap;
 }
 
-//function diagnosticPrinter(offsetsOfPropertiesMap: Map<number, informationOfProperties>):void {
 function diagnosticPrinter(ps:Parse5,HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>):void {
-  
-  const diagnosticCollection: vscode.Diagnostic[] = []; // wenn ich /div falsch schreibe dann kommt kein fehler
-  
+  // local diagnostic collection to fill with errors from every template
+  const diagnosticCollection: vscode.Diagnostic[] = [];
+  // extracting each html property from each template and registering diagnostic if found
   for (const elementOfHtmlTemplateArray of HtmlTemplateArray){
       const astofhtml = ps.parseFragment(elementOfHtmlTemplateArray?.content, { sourceCodeLocationInfo: true });
       const mapOfExtractedHtmlTemplateElementAndProperties = traverseNode(astofhtml);
@@ -199,6 +161,7 @@ function diagnosticPrinter(ps:Parse5,HtmlTemplateArray: Array<{ tag: string; con
         }
     }
 }
+  // set diagnostics
   errorCollection.set(document.uri, diagnosticCollection);
 }
 
