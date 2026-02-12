@@ -38,32 +38,23 @@ exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const html_tag_extractor_1 = require("./document/html-document/parse/html-tag-extractor");
 const internalPrinter_1 = require("./internalPrinter");
+//import type { DefaultTreeAdapterMap } from "parse5" with { "resolution-mode": "import" };
+//import { getLanguageService, TextDocument } from 'vscode-html-languageservice';
 const node_html_parser_1 = require("node-html-parser");
+//import { HtmlNode } from "lit-analyzer/lib/analyze/types/html-node/html-node-types";
+//import type { Node as HtmlParserNode } from "node-html-parser";
+//import { HTMLElement } from "node-html-parser";
 const allowed_tags_1 = require("./utils/allowed-tags");
+//import arrayToTree from "performant-array-to-tree";
 const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
 const document = vscode.window.activeTextEditor.document;
 const tagContext = new allowed_tags_1.TagContext();
-// type TagItem = {
-//   id: string;
-//   parentId: string | null;
-// };
-// const items = tagContext.getAll()
-// const item: TagItem[] = [...items].map(tag => ({
-//   id: tag,
-//   parentId: null // oder berechnet
-// }));
-// const tree = arrayToTree.arrayToTree(item, {
-//   id: "id",
-//   parentId: "parentId",
-//   childrenField: "children"
-// });
 function extractHtmlAndCssBlocks() {
     const text = document.getText();
     const templatesHtml = (0, html_tag_extractor_1.extractHtmlTemplates)(text);
     const templatesCss = (0, html_tag_extractor_1.extractCssTemplates)(text);
     const contentArrayOfHtmlTemplates = [];
     const contentArrayOfCssTemplates = [];
-    // console.log(`Gefunden: ${templatesHtml.length} html Templates`);
     templatesHtml.forEach((template, i) => {
         contentArrayOfHtmlTemplates.push({ tag: template.tag,
             content: template.content,
@@ -76,86 +67,9 @@ function extractHtmlAndCssBlocks() {
     });
     return { contentArrayOfCssTemplates: contentArrayOfCssTemplates, contentArrayOfHtmlTemplates: contentArrayOfHtmlTemplates };
 }
-// function extractHtmlData(html: HTMLElement,position: positionOfContent): void {
-//   const diagnosticCollection: vscode.Diagnostic[] = [];
-//   const extractedProperties = Array.from(html.querySelectorAll("*"));
-//   //const checking = extractedProperties.
-//   for (const el of extractedProperties) {
-//     const tagName = el.tagName.toLowerCase();
-//     const positionOfPropertie : positionOfContent =  { 
-//       startPos: el.range[0] + position.startPos + 5 , //die 5 hier ist die länge vom tag html`, muss durch plus 5 übersprungen werden
-//       endPos: el.range[0] + position.startPos + 5 + tagName.length 
-//     };
-//     if(!tagContext.isAllowed(tagName)) {
-//       const diagnostic = new vscode.Diagnostic(
-//         new vscode.Range(document.positionAt(positionOfPropertie.startPos), document.positionAt(positionOfPropertie.endPos)),
-//         `Tag <${tagName}> is not allowed.`,
-//         vscode.DiagnosticSeverity.Warning
-//       );
-//       diagnosticCollection.push(diagnostic);
-//     }
-//     const attrs = (el as any).attributes as Record<string, string>;
-//     for (const [attrName, attrValue] of Object.entries(attrs)) {
-//       console.log("")
-//     }
-//   }
-//   errorCollection.set(document.uri, diagnosticCollection);
-// }
-// Option 1: so kann ich auf alle inhalte zugreifen
-// function walk(node: any, depth = 0) {
-//   const elements = []
-//   const indent = " ".repeat(depth * 2);
-//   // Node-Header
-//   console.log(indent + node.nodeName);
-//   // Attribute sauber ausgeben
-//   if (node.attrs && node.attrs.length > 0) {
-//     for (const attr of node.attrs) {
-//       console.log(
-//         attr.name
-//         //indent + "" + attr.name + " = " + JSON.stringify(attr.value)
-//       );
-//     }
-//   }
-//   // Kinder traversieren
-//   if (node.childNodes) {
-//     for (const child of node.childNodes) {
-//       walk(child, depth + 1);
-//     }
-//   }
-// }
 function traverseNode(node, depth = 0, offsetsOfPropertiesMap = new Map(), indexCounter = { value: 0 }) {
     //nur vorübergehend
     const indent = " ".repeat(depth * 2);
-    // console.log(node.childNodes[1].childNodes[0].sourceCodeLocation.startCol);
-    // console.log(node.childNodes[1].childNodes[0].sourceCodeLocation.startLine);
-    /* Auf dieser Weise kann ich die genauen tags und weitere positionen extrahieren
-    console.log("startoffset innerer text: ",document.offsetAt(new vscode.Position(
-      node.childNodes[1].childNodes[0].sourceCodeLocation.startLine,
-       node.childNodes[1].childNodes[0].sourceCodeLocation.startCol)))
-    console.log("endoffset innerer text: ",document.offsetAt(new vscode.Position(
-    node.childNodes[1].childNodes[0].sourceCodeLocation.endLine,
-      node.childNodes[1].childNodes[0].sourceCodeLocation.endCol)))
-  
-    console.log("startoffset von div", document.offsetAt(new vscode.Position(
-      node.childNodes[1].sourceCodeLocation.startLine,
-       node.childNodes[1].sourceCodeLocation.startCol)))
-  
-    console.log("endoffset innerer text: ",document.offsetAt(new vscode.Position(
-    node.childNodes[1].sourceCodeLocation.endLine,
-      node.childNodes[1].sourceCodeLocation.endCol)))
-  
-    const startoffsetdiv = document.offsetAt(new vscode.Position(
-      node.childNodes[1].sourceCodeLocation.startLine,
-       node.childNodes[1].sourceCodeLocation.startCol));
-  
-    const startoffsetinnertext = document.offsetAt(new vscode.Position(
-      node.childNodes[1].childNodes[0].sourceCodeLocation.startLine,
-       node.childNodes[1].childNodes[0].sourceCodeLocation.startCol));
-  
-    console.log(document.getText(new vscode.Range(document.positionAt(startoffsetdiv-1),document.positionAt(startoffsetinnertext-1))));
-    */
-    // console.log(node.childNodes[1].childNodes[0].sourceCodeLocation.endCol);
-    // console.log(node.childNodes[1].childNodes[0].sourceCodeLocation.endLine);
     const vscodePositionStyle = node.sourceCodeLocation;
     if (vscodePositionStyle && node.nodeName !== "#text") {
         console.log(`${node.nodeName} [${vscodePositionStyle.startLine}, ${vscodePositionStyle.startCol}] - [${vscodePositionStyle.endLine}, ${vscodePositionStyle.endCol}]`);
@@ -263,13 +177,6 @@ async function activate(context) {
                     templates = extractHtmlAndCssBlocks();
                     informationOfCssTemplates = templates.contentArrayOfCssTemplates;
                     informationOfHtmlTemplates = templates.contentArrayOfHtmlTemplates;
-                    //     // astOfHtml = ps.parse( // Rekrusiver Baum, ich kann aus jedem Div(also Node) die inhalte extrahieren also in diesem Fall die Properties
-                    //     //   (() => {
-                    //     //   const content = informationOfHtmlTemplates[0]?.content;
-                    //     //    if(!content) throw new Error("Error: Content is undefined");
-                    //     //    return content;
-                    //     //   })(),
-                    //     // { sourceCodeLocationInfo: true });
                     const root = (0, node_html_parser_1.parse)(informationOfHtmlTemplates[0]?.content);
                     const root2 = (0, node_html_parser_1.parse)(informationOfHtmlTemplates[1]?.content);
                     const astofhtml = ps.parseFragment(informationOfHtmlTemplates[0]?.content, { sourceCodeLocationInfo: true });
@@ -278,15 +185,7 @@ async function activate(context) {
                     console.log("");
                 }));
             };
-            //     extractHtmlData(root, informationOfHtmlTemplates[0].Pos);
-            //     timers.delete(key);}, 200));
-            // };
             context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((e) => schedule(e.document)));
-            //const checkIfTrue = tagContext.isAllowed(input!.hasAttribute(".checked")); // true
-            //const type = input?.attributes; // "checkbox"
-            //console.log("Type of the input element:", type); // "checkbox"
-            // ich bislang nur relativ nicht absolut (Jochen fragen was als nächstes zutun ist also was soll überprüft werden)
-            // ich kann auch die tags extrahieren und auswerten
         }
     });
     context.subscriptions.push(disposable);
