@@ -8,9 +8,10 @@ import { parse } from "node-html-parser";
 //import type { Node as HtmlParserNode } from "node-html-parser";
 //import { HTMLElement } from "node-html-parser";
 import { TagContext } from "./utils/allowed-tags";
+import { error } from "console";
 //import arrayToTree from "performant-array-to-tree";
 const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
-
+type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
 const document = vscode.window.activeTextEditor!.document;
 type positionOfContent = { startPos: number; endPos: number };
 type positionOfContentVscode = { startLine: number; startCol: number; endLine: number; endCol: number };
@@ -68,31 +69,31 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
         endLine:  vscodePositionStyle.startTag?.endLine ?? vscodePositionStyle.endCol
       }
       })
-      if (vscodePositionStyle.endTag) {
-        const start = new vscode.Position(
-          vscodePositionStyle.endTag.startLine, 
-          vscodePositionStyle.endTag.startCol
-        );
-        const end = new vscode.Position(
-          vscodePositionStyle.endTag.endLine, 
-          vscodePositionStyle.endTag.endCol-2
-        );
-        const propertyNameFromTheDocument = document.getText(
-          new vscode.Range(
-            start,end
-          )
-        );
-        offsetsOfPropertiesMap.set(indexCounter.value++, {
-          propertyName: propertyNameFromTheDocument, 
-          positions : {
-            startCol:vscodePositionStyle.endTag?.startCol ?? vscodePositionStyle.startCol, 
-            startLine: vscodePositionStyle.endTag?.startLine ?? vscodePositionStyle.startLine, 
-            endCol: vscodePositionStyle.endTag?.endCol ?? vscodePositionStyle.endCol, 
-            endLine:  vscodePositionStyle.endTag?.endLine ?? vscodePositionStyle.endCol
-      }
-      })
-    }
-      ;
+    //   if (vscodePositionStyle.endTag) {
+    //     const start = new vscode.Position(
+    //       vscodePositionStyle.endTag.startLine, 
+    //       vscodePositionStyle.endTag.startCol
+    //     );
+    //     const end = new vscode.Position(
+    //       vscodePositionStyle.endTag.endLine, 
+    //       vscodePositionStyle.endTag.endCol-2
+    //     );
+    //     const propertyNameFromTheDocument = document.getText(
+    //       new vscode.Range(
+    //         start,end
+    //       )
+    //     );
+    //     offsetsOfPropertiesMap.set(indexCounter.value++, {
+    //       propertyName: propertyNameFromTheDocument, 
+    //       positions : {
+    //         startCol:vscodePositionStyle.endTag?.startCol ?? vscodePositionStyle.startCol, 
+    //         startLine: vscodePositionStyle.endTag?.startLine ?? vscodePositionStyle.startLine, 
+    //         endCol: vscodePositionStyle.endTag?.endCol ?? vscodePositionStyle.endCol, 
+    //         endLine:  vscodePositionStyle.endTag?.endLine ?? vscodePositionStyle.endCol
+    //   }
+    //   })
+    // }
+    //   ;
   } else {
     console.log(`${node.nodeName}`);
   }
@@ -117,30 +118,30 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
           } 
         });
       } 
-      if (childVscodePositionStyle.endTag) {
-        const start = new vscode.Position(
-          childVscodePositionStyle.endTag.startLine, 
-          childVscodePositionStyle.endTag.startCol
-        );
-        const end = new vscode.Position(
-          childVscodePositionStyle.endTag.endLine, 
-          childVscodePositionStyle.endTag.endCol-1
-        );
-        const propertyNameFromTheDocument = document.getText(
-          new vscode.Range(
-            start,end
-          )
-        );
-        offsetsOfPropertiesMap.set(indexCounter.value++, {
-          propertyName: propertyNameFromTheDocument, 
-          positions : {
-            startCol:childVscodePositionStyle.endTag?.startCol ?? childVscodePositionStyle.startCol, 
-            startLine: childVscodePositionStyle.endTag?.startLine ?? childVscodePositionStyle.startLine, 
-            endCol: childVscodePositionStyle.endTag?.endCol ?? childVscodePositionStyle.endCol, 
-            endLine:  childVscodePositionStyle.endTag?.endLine ?? childVscodePositionStyle.endCol
-          }
-        })
-      }
+      // if (childVscodePositionStyle.endTag) {
+      //   const start = new vscode.Position(
+      //     childVscodePositionStyle.endTag.startLine, 
+      //     childVscodePositionStyle.endTag.startCol
+      //   );
+      //   const end = new vscode.Position(
+      //     childVscodePositionStyle.endTag.endLine, 
+      //     childVscodePositionStyle.endTag.endCol-1
+      //   );
+      //   const propertyNameFromTheDocument = document.getText(
+      //     new vscode.Range(
+      //       start,end
+      //     )
+      //   );
+      //   offsetsOfPropertiesMap.set(indexCounter.value++, {
+      //     propertyName: propertyNameFromTheDocument, 
+      //     positions : {
+      //       startCol:childVscodePositionStyle.endTag?.startCol ?? childVscodePositionStyle.startCol, 
+      //       startLine: childVscodePositionStyle.endTag?.startLine ?? childVscodePositionStyle.startLine, 
+      //       endCol: childVscodePositionStyle.endTag?.endCol ?? childVscodePositionStyle.endCol, 
+      //       endLine:  childVscodePositionStyle.endTag?.endLine ?? childVscodePositionStyle.endCol
+      //     }
+      //   })
+      // }
       
       else {
         console.log(`${attr.name}=${JSON.stringify(attr.value)}`);
@@ -155,31 +156,49 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
   return offsetsOfPropertiesMap;
 }
 
-function diagnosticPrinter(offsetsOfPropertiesMap: Map<number, informationOfProperties>): void {
+//function diagnosticPrinter(offsetsOfPropertiesMap: Map<number, informationOfProperties>):void {
+function diagnosticPrinter(ps:Parse5,HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>):void {
+  
   const diagnosticCollection: vscode.Diagnostic[] = []; // wenn ich /div falsch schreibe dann kommt kein fehler
   
-  for (const [index, informationOfBrackets] of offsetsOfPropertiesMap) {
-    if(!tagContext.isAllowed(informationOfBrackets.propertyName) && informationOfBrackets.propertyName !== "#text") {
+  for (const elementOfHtmlTemplateArray of HtmlTemplateArray){
+      const astofhtml = ps.parseFragment(elementOfHtmlTemplateArray?.content, { sourceCodeLocationInfo: true });
+      const mapOfExtractedHtmlTemplateElementAndProperties = traverseNode(astofhtml);
+    
+      const templateStartPos = document.positionAt(elementOfHtmlTemplateArray.Pos.startPos);
+      for (const [index, informationOfProperties] of mapOfExtractedHtmlTemplateElementAndProperties) {
+        if(!tagContext.isAllowed(informationOfProperties.propertyName) && informationOfProperties.propertyName !== "#text") {
+          const absoluteStartLine = templateStartPos.line + (informationOfProperties.positions.startLine - 1);
+          const absoluteEndLine = templateStartPos.line + (informationOfProperties.positions.endLine - 1);
+          
+          // Für die erste Zeile des Templates muss die Column des Template-Starts addiert werden
+          const absoluteStartCol = (informationOfProperties.positions.startLine === 1) 
+            ? templateStartPos.character + informationOfProperties.positions.startCol
+            : informationOfProperties.positions.startCol;
+            
+          const absoluteEndCol = (informationOfProperties.positions.endLine === 1)
+            ? templateStartPos.character + informationOfProperties.positions.endCol
+            : informationOfProperties.positions.endCol;
+              
         const diagnostic = new vscode.Diagnostic(
-          new vscode.Range
-          (
-            new vscode.Position
+            new vscode.Range
             (
-            informationOfBrackets.positions.startLine, 
-            informationOfBrackets.positions.startCol
-          ),
-            new vscode.Position
-            (
-              informationOfBrackets.positions.endLine, 
-              informationOfBrackets.positions.endCol
-            )
-          ),
-          `Propertie ${informationOfBrackets.propertyName} is unknown.`,
-          vscode.DiagnosticSeverity.Warning
-        );
-        diagnosticCollection.push(diagnostic);
-      }
-  }
+              new vscode.Position
+              (
+              absoluteStartLine, absoluteStartCol
+            ),
+              new vscode.Position
+              (
+                absoluteEndLine, absoluteEndCol
+              )
+            ),
+            `Propertie ${informationOfProperties.propertyName} is unknown.`,
+            vscode.DiagnosticSeverity.Warning
+          );
+          diagnosticCollection.push(diagnostic);
+        }
+    }
+}
   errorCollection.set(document.uri, diagnosticCollection);
 }
 
@@ -189,7 +208,6 @@ export async function activate(context: vscode.ExtensionContext) {
   const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
   context.subscriptions.push(diagnostics);
 
-  //errorCollection.set(document.uri, diagnosticCollection);
   var templates;
   var informationOfCssTemplates;
   var informationOfHtmlTemplates;
@@ -205,20 +223,19 @@ export async function activate(context: vscode.ExtensionContext) {
           const key = doc.uri.toString();
           const prev = timers.get(key);
           if (prev) clearTimeout(prev);
-          timers.set(key, setTimeout(() => {
+          timers.set
+          (
+            key, setTimeout
+            (() => 
+            {
             templates = extractHtmlAndCssBlocks();
             informationOfCssTemplates = templates.contentArrayOfCssTemplates;
             informationOfHtmlTemplates = templates.contentArrayOfHtmlTemplates;
 
-            const root = parse(informationOfHtmlTemplates[0]?.content);
-            const root2 = parse(informationOfHtmlTemplates[1]?.content);
-            const astofhtml = ps.parseFragment(informationOfHtmlTemplates[0]?.content, { sourceCodeLocationInfo: true });
-            const allProperties = traverseNode(astofhtml);
-            diagnosticPrinter(allProperties);
-            console.log("")
-                                          }
-                                    )
-                    )
+            diagnosticPrinter(ps,informationOfHtmlTemplates);
+            }
+            )
+          )
         }
 
         context.subscriptions.push(
