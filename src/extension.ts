@@ -18,11 +18,11 @@ type informationOfProperties = { propertyName: string; positions: positionOfCont
 // error collection of vs code
 const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
 // current open document in vs code
-const document = vscode.window.activeTextEditor!.document;
+//const document = vscode.window.activeTextEditor!.document;
 // Array of allowed Tags
 const tagContext = new TagContext();
 
-function extractHtmlAndCssBlocks(): {
+function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
   contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>,
   contentArrayOfCssTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>
 } 
@@ -121,7 +121,9 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
   return offsetsOfPropertiesMap;
 }
 
-function diagnosticPrinter(ps:Parse5,HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>):void {
+function diagnosticPrinter( ps:Parse5,
+                            HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
+                            document: vscode.TextDocument):void {
   // local diagnostic collection to fill with errors from every template
   const diagnosticCollection: vscode.Diagnostic[] = [];
   // extracting each html property from each template and registering diagnostic if found
@@ -175,8 +177,6 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(diagnostics);
 
   var templates;
-  var informationOfCssTemplates;
-  var informationOfHtmlTemplates;
 
   const disposable = vscode.commands.registerCommand("helloworld.helloWorld", () => 
     {
@@ -194,11 +194,8 @@ export async function activate(context: vscode.ExtensionContext) {
             key, setTimeout
             (() => 
             {
-            templates = extractHtmlAndCssBlocks();
-            informationOfCssTemplates = templates.contentArrayOfCssTemplates;
-            informationOfHtmlTemplates = templates.contentArrayOfHtmlTemplates;
-
-            diagnosticPrinter(ps,informationOfHtmlTemplates);
+            templates = extractHtmlAndCssBlocks(doc);
+            diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc);
             }
             )
           )
@@ -206,6 +203,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         context.subscriptions.push(
           vscode.workspace.onDidChangeTextDocument((e) => schedule(e.document)),
+          vscode.workspace.onDidOpenTextDocument((doc) => schedule(doc)),
+          vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri))
         );
       }
     }
