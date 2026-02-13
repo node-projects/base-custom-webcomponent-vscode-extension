@@ -3,6 +3,15 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Build and packages files
+backup/
+node_modules/
+src/ToDo.txt
+src/document/css-document
+src/document/experiments
+*.png
+out/
+
 # User-specific files
 *.rsuser
 *.suo
