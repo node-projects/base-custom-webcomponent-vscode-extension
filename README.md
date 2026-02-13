@@ -1,95 +1,114 @@
 # Lit-HTML & Styled Components Extension
 
-Eine VS Code Extension, die Syntax-Highlighting und Diagnose-Funktionen für lit-html Templates und styled-components in JavaScript/TypeScript-Projekten bereitstellt.
+A VS Code extension that provides syntax highlighting and diagnostic features for lit-html templates and styled-components in JavaScript/TypeScript projects.
+This project builds on the Base-Custom-Components project.
 
 ## Features
 
 ### Syntax Highlighting
 
-Die Extension bietet umfassendes Syntax-Highlighting für:
+The extension provides comprehensive syntax highlighting for:
 
-- **lit-html Templates**: HTML-Syntax innerhalb von Template-Strings
-- **CSS in lit-html**: CSS-Blöcke in `<style>`-Tags innerhalb von lit-html Templates
-- **SVG-Support**: Vollständige Unterstützung für SVG-Elemente in lit-html
-- **Styled Components**: CSS-Syntax in styled-components für JavaScript/TypeScript
+- **lit-html Templates**: HTML syntax within template strings
+- **CSS in lit-html**: CSS blocks in `<style>` tags within lit-html templates
+- **Styled Components**: CSS syntax in styled-components for JavaScript/TypeScript
 
-### Unterstützte Dateitypen
+### Supported File Types
 
-Die Syntax-Hervorhebung wird in folgenden Dateitypen aktiviert:
-- JavaScript (`.js`, `.jsx`)
-- TypeScript (`.ts`, `.tsx`)
-- HTML (`.html`)
+Syntax highlighting is activated for the following file types:
+-JavaScript (`.js`, `.jsx`)
+-TypeScript (`.ts`, `.tsx`)
+-HTML (`.html`)
 
-### Template-Extraktion
+### Template-Extraction
 
-Die Extension analysiert automatisch:
-- HTML-Template-Literale in JavaScript/TypeScript
-- CSS-Template-Literale in styled-components
-- Verschachtelte CSS- und SVG-Blöcke
+The extension automatically analyzes:
+-HTML template literals in JavaScript/TypeScript
+-CSS template literals in styled-components
+
+```typescript
+static templatef = html`
+    <div>[[this.bb]]</div> 
+    <input type="checkbox" .checked="{{this.ee}}">Value: [[this.ee]]
+    <div>[[this.bb]]</div>
+  `;
+static style = css`
+    :host {
+        font-size: 20px;
+}`
+```
 
 ## Installation
 
-### Voraussetzungen
+### Prerequisites
 
-- Visual Studio Code Version 1.108.0 oder höher
-- Node.js und npm für Entwicklung
+- Visual Studio Code Version 1.108.0 or higher
+- Node.js and npm for development
 
-### Aus dem Quellcode
+### From Sourcecode
 
-1. Repository klonen oder herunterladen
-2. Dependencies installieren:
-   ```bash
+1. Clone or download the repository
+2. Install dependencies
+
+```bash
    npm install
    npm run compile
-   ```
-3. In VS Code: ```F5``` drücken, um eine neue Extension Development Host-Instanz zu starten
-
-### Verwendung
-
-##### Befehle
-Hello World: Beispielbefehl (Ctrl+Shift+P → "Hello World")
-Entwicklung
-Projekt-Struktur
-
-### Entwicklung
 ```
+
+3.In VS Code: Press ```F5``` to start a new Extension Development Host instance
+
+### Usage
+
+#### Commands
+
+Hello World: Sample command (Ctrl+Shift+P → "Hello World")
+Development
+Project Structure
+
+### Development
+
+```Text
 ├── src/
-│   ├── [extension.ts](http://_vscodecontentref_/0)             #Haupteinstiegspunkt der Extension
-│   ├── internalPrinter.ts        # Logging-Utilities
+│   ├── [extension.ts](http://_vscodecontentref_/0)             #Main entry point of the extension 
+│   ├── internalPrinter.ts        # Logging utilities
 │   ├── document/
-│   │   ├── html-document/        # HTML-Parsing-Logik
-│   │   ├── css-document/         # CSS-Parsing-Logik
-│   │   ├── syntaxes/             # Syntax-Grammar-Definitionen
-│   │   └── experiments/          # AST-Analysen und Tests
+│   │   ├── html-document/        # HTML parsing logic
+│   │   ├── css-document/         # CSS parsing logic
+│   │   ├── syntaxes/             # Syntax grammar definitions
+│   │   └── experiments/          # AST analysis and tests
 │   ├── utils/
-│   │   └── allowed-tags.ts       # Erlaubte HTML-Tags
+│   │   └── allowed-tags.ts       # Allowed HTML tags
 │   └── test/
-│       └── extension.test.ts     # Unit-Tests
+│       └── extension.test.ts     # Unit tests
 ```
 
 ### Dependencies
-Wichtige Abhängigkeiten
-```
-parse5: HTML5-konformer Parser
-node-html-parser: Schneller HTML-Parser
-lit-analyzer: Analyse-Tools für lit-html
-vscode-html-languageservice: HTML-Sprachdienste
-vscode-css-languageservice: CSS-Sprachdienste
-```
 
-### Technische Details
+Important Dependencies
 
-#### Die Extension nutzt:
-```
-Grammar Injection: Injiziert HTML/CSS-Syntax in JavaScript/TypeScript
-Embedded Languages: Unterstützt verschachtelte Sprachen (HTML, CSS, SVG in JS/TS)
-Diagnostic Collection: Sammelt und zeigt Fehler in Templates an
-AST-Parsing: Analysiert Template-Strings mittels Abstract Syntax Trees
+```Text
+parse5: HTML5-compliant parser
+node-html-parser: Fast HTML parser
+lit-analyzer: Analysis tools for lit-html
+vscode-html-languageservice: HTML language services
+vscode-css-languageservice: CSS language services
 ```
 
-Bekannte Einschränkungen
-Die Extension befindet sich in aktiver Entwicklung
-Einige experimentelle Features sind noch in der experiments/-Ordner
+### Technical Details
 
-#### Autor
-Entwickelt von Emmanuel Youssef im Rahmen eines Praxisprojekts im Semester 5 bei Kardex Holding AG.
+#### The Extension Uses
+
+```Text
+Grammar Injection: Injects HTML/CSS syntax into JavaScript/TypeScript
+Embedded Languages: Supports nested languages (HTML, CSS, SVG in JS/TS)
+Diagnostic Collection: Collects and displays errors in templates
+AST-Parsing: Analyzes template strings using Abstract Syntax Trees
+```
+
+Known Limitations
+The extension is under active development
+Some experimental features are still in the experiments/ folder
+
+##### Autor
+
+Developed by Emmanuel Youssef as part of a practical project in Semester 5 at Kardex Holding AG.
