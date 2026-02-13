@@ -125,6 +125,24 @@ Array<{content: informationOfProperties }> {
   return offsetsOfPropertiesMap;
 }
 
+function createPositions(templateStartPos: vscode.Position, item: informationOfProperties): { 
+  absoluteStartLine: number; absoluteEndLine: number; absoluteStartCol: number; absoluteEndCol: number } {
+  const absoluteStartLine = templateStartPos.line + (item.positions.startLine - 1);
+
+  const absoluteEndLine = templateStartPos.line + (item.positions.endLine - 1);
+  
+  // Für die erste Zeile des Templates muss die Column des Template-Starts addiert werden
+  const absoluteStartCol = (item.positions.startLine === 1) 
+    ? templateStartPos.character + item.positions.startCol
+    : item.positions.startCol;
+    
+  const absoluteEndCol = (item.positions.endLine === 1)
+    ? templateStartPos.character + item.positions.endCol
+    : item.positions.endCol;
+
+  return { absoluteStartLine, absoluteEndLine, absoluteStartCol, absoluteEndCol };  
+}
+
 function diagnosticPrinter( ps:Parse5,
                             HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
                             document: vscode.TextDocument):void {
@@ -143,29 +161,14 @@ function diagnosticPrinter( ps:Parse5,
 
         if(!tagContext.isAllowed(item.content.propertyName) && item.content.propertyName !== "#text") {
 
-          const absoluteStartLine = templateStartPos.line + (item.content.positions.startLine - 1);
-
-          const absoluteEndLine = templateStartPos.line + (item.content.positions.endLine - 1);
-          
-          // Für die erste Zeile des Templates muss die Column des Template-Starts addiert werden
-          const absoluteStartCol = (item.content.positions.startLine === 1) 
-            ? templateStartPos.character + item.content.positions.startCol
-            : item.content.positions.startCol;
-            
-          const absoluteEndCol = (item.content.positions.endLine === 1)
-            ? templateStartPos.character + item.content.positions.endCol
-            : item.content.positions.endCol;
+          const correctedPositions = createPositions(templateStartPos, item.content);
               
         const newDiagnostic = new vscode.Diagnostic(
-            new vscode.Range
-            (
-              new vscode.Position
-              (
-              absoluteStartLine, absoluteStartCol
+            new vscode.Range(new vscode.Position(
+              correctedPositions.absoluteStartLine,correctedPositions.absoluteStartCol
             ),
-              new vscode.Position
-              (
-                absoluteEndLine, absoluteEndCol
+            new vscode.Position(
+                correctedPositions.absoluteEndLine, correctedPositions.absoluteEndCol
               )
             ),
             `Propertie ${item.content.propertyName} is unknown. Check for typos.`,
@@ -181,11 +184,9 @@ function diagnosticPrinter( ps:Parse5,
 
 export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
-  const offsetsOfPropertiesMap = new Map<number, informationOfProperties>()
   const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
   context.subscriptions.push(diagnostics);
 
-  var templates;
 
   const disposable = vscode.commands.registerCommand("helloworld.helloWorld", () => 
     {
@@ -203,7 +204,7 @@ export async function activate(context: vscode.ExtensionContext) {
             key, setTimeout
             (() => 
             {
-            templates = extractHtmlAndCssBlocks(doc);
+            const templates = extractHtmlAndCssBlocks(doc);
             diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc);
             }
             )
