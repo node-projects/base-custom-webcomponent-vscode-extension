@@ -65,21 +65,23 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
 }
 
 
-function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<number, informationOfProperties>(),
-  indexCounter = { value: 0 }): Map<number, informationOfProperties> {
+function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Array<{content: informationOfProperties }>(),): 
+Array<{content: informationOfProperties }> {
   //nur vorübergehend
 
   const vscodePositionStyle = node.sourceCodeLocation;
 
   if (vscodePositionStyle && node.nodeName !== "#text") {
     //console.log(`${node.nodeName} [${vscodePositionStyle.startLine}, ${vscodePositionStyle.startCol}] - [${vscodePositionStyle.endLine}, ${vscodePositionStyle.endCol}]`);
-    offsetsOfPropertiesMap.set(indexCounter.value++, {
-      propertyName: node.nodeName, 
-      positions : {
+    offsetsOfPropertiesMap.push( {
+      content : {
+        propertyName: node.nodeName,
+        positions : {
         startCol:vscodePositionStyle.startTag?.startCol ?? vscodePositionStyle.startCol, 
         startLine: vscodePositionStyle.startTag?.startLine ?? vscodePositionStyle.startLine, 
         endCol: vscodePositionStyle.startTag?.endCol ?? vscodePositionStyle.endCol, 
         endLine:  vscodePositionStyle.startTag?.endLine ?? vscodePositionStyle.endCol
+      }
       }
       })
   } else {
@@ -98,14 +100,16 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
         //   `${attr.name}=${JSON.stringify(attr.value)} ` +
         //   `[${childVscodePositionStyle.startLine}, ${childVscodePositionStyle.startCol}] - [${childVscodePositionStyle.endLine}, ${childVscodePositionStyle.endCol}]`
         // );
-        offsetsOfPropertiesMap.set(indexCounter.value++, { 
-          propertyName: attr.name, 
-          positions : {
+        offsetsOfPropertiesMap.push({ 
+          content:{
+            propertyName: attr.name,
+            positions : {
             startCol:nodeChild.startTag?.startCol ?? nodeChild.startCol, 
             startLine: nodeChild.startTag?.startLine ?? nodeChild.startLine, 
             endCol: nodeChild.startTag?.endCol ?? nodeChild.endCol, 
             endLine:  nodeChild.startTag?.endLine ?? nodeChild.endLine
           } 
+          }
         });
       } 
       else {
@@ -116,7 +120,7 @@ function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Map<num
 
   // Kinder
   if (node.childNodes) {
-    for (const child of node.childNodes) traverseNode(child, depth + 1, offsetsOfPropertiesMap, indexCounter);
+    for (const child of node.childNodes) traverseNode(child, depth + 1, offsetsOfPropertiesMap);
   }
   return offsetsOfPropertiesMap;
 }
@@ -128,25 +132,31 @@ function diagnosticPrinter( ps:Parse5,
   const diagnosticCollection: vscode.Diagnostic[] = [];
   // extracting each html property from each template and registering diagnostic if found
   for (const elementOfHtmlTemplateArray of HtmlTemplateArray){
-      const astofhtml = ps.parseFragment(elementOfHtmlTemplateArray?.content, { sourceCodeLocationInfo: true });
-      const mapOfExtractedHtmlTemplateElementAndProperties = traverseNode(astofhtml);
+      
+    const parsedHtml = ps.parseFragment(elementOfHtmlTemplateArray?.content, { sourceCodeLocationInfo: true });
+      
+    const arrayOfExtractedHtmlContent = traverseNode(parsedHtml);
     
-      const templateStartPos = document.positionAt(elementOfHtmlTemplateArray.Pos.startPos);
-      for (const [index, informationOfProperties] of mapOfExtractedHtmlTemplateElementAndProperties) {
-        if(!tagContext.isAllowed(informationOfProperties.propertyName) && informationOfProperties.propertyName !== "#text") {
-          const absoluteStartLine = templateStartPos.line + (informationOfProperties.positions.startLine - 1);
-          const absoluteEndLine = templateStartPos.line + (informationOfProperties.positions.endLine - 1);
+    const templateStartPos = document.positionAt(elementOfHtmlTemplateArray.Pos.startPos);
+
+      for (const [ _, item] of arrayOfExtractedHtmlContent.entries()) {
+
+        if(!tagContext.isAllowed(item.content.propertyName) && item.content.propertyName !== "#text") {
+
+          const absoluteStartLine = templateStartPos.line + (item.content.positions.startLine - 1);
+
+          const absoluteEndLine = templateStartPos.line + (item.content.positions.endLine - 1);
           
           // Für die erste Zeile des Templates muss die Column des Template-Starts addiert werden
-          const absoluteStartCol = (informationOfProperties.positions.startLine === 1) 
-            ? templateStartPos.character + informationOfProperties.positions.startCol
-            : informationOfProperties.positions.startCol;
+          const absoluteStartCol = (item.content.positions.startLine === 1) 
+            ? templateStartPos.character + item.content.positions.startCol
+            : item.content.positions.startCol;
             
-          const absoluteEndCol = (informationOfProperties.positions.endLine === 1)
-            ? templateStartPos.character + informationOfProperties.positions.endCol
-            : informationOfProperties.positions.endCol;
+          const absoluteEndCol = (item.content.positions.endLine === 1)
+            ? templateStartPos.character + item.content.positions.endCol
+            : item.content.positions.endCol;
               
-        const diagnostic = new vscode.Diagnostic(
+        const newDiagnostic = new vscode.Diagnostic(
             new vscode.Range
             (
               new vscode.Position
@@ -158,11 +168,10 @@ function diagnosticPrinter( ps:Parse5,
                 absoluteEndLine, absoluteEndCol
               )
             ),
-            `Propertie ${informationOfProperties.propertyName} is unknown.
-            Check for typos.`,
+            `Propertie ${item.content.propertyName} is unknown. Check for typos.`,
             vscode.DiagnosticSeverity.Warning
           );
-          diagnosticCollection.push(diagnostic);
+          diagnosticCollection.push(newDiagnostic);
         }
     }
 }
