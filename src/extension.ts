@@ -4,20 +4,21 @@ import { printInternalMessage } from "./utils/internalPrinter";
 import * as htmlService from "vscode-html-languageservice";
 import {ITagData} from "./interface/tagData"
 import { customElement } from "./class/customElement";
+import * as cssService from "vscode-css-languageservice"
+import { isUndefined } from "util";
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
 type positionOfContent = { startPos: number; endPos: number };
-type positionOfContentRangeFormat = { startLine: number; startCol: number; endLine: number; endCol: number };
-type informationOfProperties = { propertyName: string; positions: positionOfContentRangeFormat;};
-type informationOfPropertiesOffsetFormat = { propertyName: string; positions: positionOfContent;};
+
+
+
 // error collection of vs code
 const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
-// current open document in vs code
-//const document = vscode.window.activeTextEditor!.document;
-// Array of allowed Tags
 
+// imported objects
 const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
-const myOwnAttributes = new customElement;
+const cssLanguageService = cssService.getDefaultCSSDataProvider()
+const customHtmlElements = new customElement;
 
 function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
   contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>,
@@ -27,27 +28,24 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
   // vs code document text
   const documentText = document.getText();
   // extracted html templates found in documentText
-  const templatesHtml = extractHtmlTemplates(documentText);
+  const htmlTemplates = extractHtmlTemplates(documentText);
   // extracted css templates found in documentText
-  const templatesCss = extractCssTemplates(documentText);
+  const cssTemplates = extractCssTemplates(documentText);
   // Arrays to return
   const contentArrayOfHtmlTemplates: Array<{ tag: string; content: string; Pos: positionOfContent }> = [];
+  
   const contentArrayOfCssTemplates: Array<{ tag: string; content: string; Pos: positionOfContent }> = [];
 
-  templatesHtml.forEach((template, i) => 
+  htmlTemplates.forEach((template, i) => 
     {
     contentArrayOfHtmlTemplates.push({tag: template.tag, 
                                       content: template.content, 
                                       Pos: {startPos: template.startPos, endPos: template.endPos} 
                                   }
                                 );
-    printInternalMessage(document.positionAt(template.startPos),
-                         document.getText(new vscode.Range(document.positionAt(template.startPos), 
-                                                           document.positionAt(template.startPos + 1))),
-                         template.content)
     }
   );
-  templatesCss.forEach((template, i) => 
+  cssTemplates.forEach((template, i) => 
     {
     printInternalMessage(document.positionAt(template.startPos),
                          document.getText(new vscode.Range(document.positionAt(template.startPos), 
@@ -62,57 +60,37 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
 }
 
 
-function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Array<{content: informationOfPropertiesOffsetFormat }>()): 
-ITagData {
-  //nur vorübergehend
+function extractTagWithAttr(templateTag: any): ITagData {
   
-  const vscodePositionStyle = node.sourceCodeLocation;
-  const vscodee = {} as ITagData
-  if (vscodePositionStyle && node.nodeName !== "#text") {
-    //console.log(`${node.nodeName} [${vscodePositionStyle.startLine}, ${vscodePositionStyle.startCol}] - [${vscodePositionStyle.endLine}, ${vscodePositionStyle.endCol}]`);
-    offsetsOfPropertiesMap.push( {
-      content : {
-        propertyName: node.nodeName,
-        positions : {
-        startPos: vscodePositionStyle.startTag?.startOffset ?? vscodePositionStyle.startOffset,
-        endPos: vscodePositionStyle.startTag?.endOffset ?? vscodePositionStyle.endOffset,
-      }
-      }
-      })
-      vscodee.name = node.nodeName
-      vscodee.attributes = []
-      vscodee.startOffset = vscodePositionStyle.startTag?.startOffset ?? vscodePositionStyle.startOffset
-      vscodee.endOffset = vscodePositionStyle.startTag?.endOffset ?? vscodePositionStyle.endOffset
+  const singleTagData = {} as ITagData;
+
+  const templateTagLocation = templateTag.sourceCodeLocation;
+
+  if (templateTagLocation && templateTag.nodeName !== "#text") {
+
+      singleTagData.name = templateTag.nodeName
+      singleTagData.attributes = []
+      singleTagData.startOffset = templateTagLocation.startTag?.startOffset ?? templateTagLocation.startOffset
+      singleTagData.endOffset = templateTagLocation.startTag?.endOffset ?? templateTagLocation.endOffset
     
   } else {
-    console.error(`didn't find a valid html tag, found: ${node.nodeName}`);
+    console.error(`didn't find a valid html tag, found: ${templateTag.nodeName}`);
   }
 
   // Attribute + deren Positionen
-  if (node.attrs && node.attrs.length > 0) {
+  if (templateTag.attrs && templateTag.attrs.length > 0) {
     
-    for (const attr of node.attrs) {
+    for (const attr of templateTag.attrs) {
       
-      const nodeChild = vscodePositionStyle?.attrs?.[attr.name]; // <- positions for this attribute
+      const nodeChild = templateTagLocation?.attrs?.[attr.name]; // <- positions for this attribute
       
       if (nodeChild) {
-        // console.log(
-        //   `${attr.name}=${JSON.stringify(attr.value)} ` +
-        //   `[${childVscodePositionStyle.startLine}, ${childVscodePositionStyle.startCol}] - [${childVscodePositionStyle.endLine}, ${childVscodePositionStyle.endCol}]`
-        // );
-        offsetsOfPropertiesMap.push({ 
-          content:{
-            propertyName: attr.name,
-            positions : {
-            startPos: nodeChild.startTag?.startOffset ?? nodeChild.startOffset,
-            endPos: nodeChild.startTag?.endOffset ?? nodeChild.endOffset,
-          } 
-          }
-        });
-        vscodee.attributes.push({
+
+        singleTagData.attributes.push(
+          {
           name: attr.name,
           startOffset: nodeChild.startTag?.startOffset ?? nodeChild.startOffset,
-          endOffset:nodeChild.startTag?.endOffset ?? nodeChild.endOffset
+          endOffset: nodeChild.startTag?.endOffset ?? nodeChild.endOffset
         })
         
       } 
@@ -121,12 +99,7 @@ ITagData {
       }
     }
   }
-
-  // Kinder
-  if (node.childNodes) {
-    for (const child of node.childNodes) traverseNode(child, depth + 1, offsetsOfPropertiesMap);
-  }
-  return vscodee;
+  return singleTagData;
 }
 
 function createPositions( templateTag: string,
@@ -147,59 +120,67 @@ function diagnosticPrinter( ps:Parse5,
 {
   const validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
 
-
   // local diagnostic collection to fill with errors from every template
   const diagnosticCollection: vscode.Diagnostic[] = [];
   // extracting each html property from each template and registering diagnostic if found
-  for (const elementOfHtmlTemplateArray of HtmlTemplateArray){
+  for (const singleBlockOfHtmlTemplate of HtmlTemplateArray){
     
     // Parsing the found template with relative offsets
-    const parsedHtml = ps.parseFragment(elementOfHtmlTemplateArray?.content, { sourceCodeLocationInfo: true });
+    const parsedHtml = ps.parseFragment(singleBlockOfHtmlTemplate?.content, { sourceCodeLocationInfo: true });
+    
     for (const node of parsedHtml.childNodes) {
-    const arrayOfExtractedHtmlContent = traverseNode(node);
+    
+      const extractedHtmlContent = extractTagWithAttr(node);
       
-      if (validTagNames.has(arrayOfExtractedHtmlContent.name)){
+      if (validTagNames.has(extractedHtmlContent.name)){
         
-        for (const item of arrayOfExtractedHtmlContent.attributes) {
+        for (const item of extractedHtmlContent.attributes) {
         
-          const validAttributeNames = new Set(htmlLanguageService.provideAttributes(arrayOfExtractedHtmlContent.name).map(t => t.name))
-          const customValidAttributeNames = new Set(myOwnAttributes.provideAttributes(arrayOfExtractedHtmlContent.name).map(t => t.name))
-
-        if(item.name !== "#text" && !validAttributeNames.has(item.name) && !customValidAttributeNames.has(item.name)) {
-
-          const tagPositions = createPositions( elementOfHtmlTemplateArray.tag,
-                                                elementOfHtmlTemplateArray.Pos, 
-                                                item.startOffset,item.endOffset);
+          const validAttributeNames = new Set(htmlLanguageService.provideAttributes(
+            extractedHtmlContent.name).map(t => t.name))
           
-          const newDiagnostic = new vscode.Diagnostic(
+          const customValidAttributeNames = new Set(customHtmlElements.provideAttributes(
+            extractedHtmlContent.name).map(t => t.name))
+
+          if( item.name !== "#text" && 
+              !validAttributeNames.has(item.name) && 
+              !customValidAttributeNames.has(item.name)
+            ) {
+
+            const positionOfElement = createPositions( singleBlockOfHtmlTemplate.tag,
+                                                  singleBlockOfHtmlTemplate.Pos, 
+                                                  item.startOffset,item.endOffset);
+            
+            const newDiagnostic = new vscode.Diagnostic(
               new vscode.Range(
-                document.positionAt(tagPositions.globalStartOffset),
-                document.positionAt(tagPositions.globalEndOffset)
+                document.positionAt(positionOfElement.globalStartOffset),
+                document.positionAt(positionOfElement.globalEndOffset)
               ),
-              `Propertie ${item.name} is unknown. Check for typos.`,
+              `Attribute ${item.name} is unknown or not valid for ${extractedHtmlContent.name}.`,
               vscode.DiagnosticSeverity.Warning
             );
             diagnosticCollection.push(newDiagnostic);
+          }
         }
-        }
-
       }
       else{
-        const tagPositions = createPositions( elementOfHtmlTemplateArray.tag,
-                                                elementOfHtmlTemplateArray.Pos, 
-                                                arrayOfExtractedHtmlContent.startOffset,arrayOfExtractedHtmlContent.endOffset);
+        //if(!extractedHtmlContent.name === undefined ){
+        const tagPositions = createPositions( singleBlockOfHtmlTemplate.tag,
+                                                singleBlockOfHtmlTemplate.Pos, 
+                                                extractedHtmlContent.startOffset,extractedHtmlContent.endOffset);
           
-          const newDiagnostic = new vscode.Diagnostic(
-              new vscode.Range(
-                document.positionAt(tagPositions.globalStartOffset),
-                document.positionAt(tagPositions.globalEndOffset)
-              ),
-              `Propertie ${arrayOfExtractedHtmlContent.name} is unknown. Check for typos.`,
-              vscode.DiagnosticSeverity.Warning
-            );
-            diagnosticCollection.push(newDiagnostic);
-        }
+        const newDiagnostic = new vscode.Diagnostic(
+            new vscode.Range(
+              document.positionAt(tagPositions.globalStartOffset),
+              document.positionAt(tagPositions.globalEndOffset)
+            ),
+            `Tag ${extractedHtmlContent.name} is unknown. Check for typos.`,
+            vscode.DiagnosticSeverity.Warning
+          );
+          diagnosticCollection.push(newDiagnostic);
+        //}
       }
+    }
     }
   // set diagnostics
   errorCollection.set(document.uri, diagnosticCollection);
