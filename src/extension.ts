@@ -1,15 +1,9 @@
 import * as vscode from "vscode";
 import { extractHtmlTemplates,extractCssTemplates } from './document/html-document/parse/html-tag-extractor';
-import { printInternalMessage } from "./internalPrinter";
-//import type { DefaultTreeAdapterMap } from "parse5" with { "resolution-mode": "import" };
-//import { getLanguageService, TextDocument } from 'vscode-html-languageservice';
-import { parse } from "node-html-parser";
-//import { HtmlNode } from "lit-analyzer/lib/analyze/types/html-node/html-node-types";
-//import type { Node as HtmlParserNode } from "node-html-parser";
-//import { HTMLElement } from "node-html-parser";
-import { TagContext } from "./utils/allowed-tags";
-import { error } from "console";
-//import arrayToTree from "performant-array-to-tree";
+import { printInternalMessage } from "./utils/internalPrinter";
+import * as htmlService from "vscode-html-languageservice";
+import {ITagData} from "./interface/tagData"
+import { customElement } from "./class/customElement";
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
 type positionOfContent = { startPos: number; endPos: number };
@@ -21,7 +15,9 @@ const errorCollection = vscode.languages.createDiagnosticCollection("myExtension
 // current open document in vs code
 //const document = vscode.window.activeTextEditor!.document;
 // Array of allowed Tags
-const tagContext = new TagContext();
+
+const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
+const myOwnAttributes = new customElement;
 
 function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
   contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>,
@@ -66,12 +62,12 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
 }
 
 
-function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Array<{content: informationOfPropertiesOffsetFormat }>(),): 
-Array<{content: informationOfPropertiesOffsetFormat }> {
+function traverseNode(node: any, depth = 0, offsetsOfPropertiesMap = new Array<{content: informationOfPropertiesOffsetFormat }>()): 
+ITagData {
   //nur vorübergehend
-
+  
   const vscodePositionStyle = node.sourceCodeLocation;
-
+  const vscodee = {} as ITagData
   if (vscodePositionStyle && node.nodeName !== "#text") {
     //console.log(`${node.nodeName} [${vscodePositionStyle.startLine}, ${vscodePositionStyle.startCol}] - [${vscodePositionStyle.endLine}, ${vscodePositionStyle.endCol}]`);
     offsetsOfPropertiesMap.push( {
@@ -83,6 +79,11 @@ Array<{content: informationOfPropertiesOffsetFormat }> {
       }
       }
       })
+      vscodee.name = node.nodeName
+      vscodee.attributes = []
+      vscodee.startOffset = vscodePositionStyle.startTag?.startOffset ?? vscodePositionStyle.startOffset
+      vscodee.endOffset = vscodePositionStyle.startTag?.endOffset ?? vscodePositionStyle.endOffset
+    
   } else {
     console.error(`didn't find a valid html tag, found: ${node.nodeName}`);
   }
@@ -108,6 +109,12 @@ Array<{content: informationOfPropertiesOffsetFormat }> {
           } 
           }
         });
+        vscodee.attributes.push({
+          name: attr.name,
+          startOffset: nodeChild.startTag?.startOffset ?? nodeChild.startOffset,
+          endOffset:nodeChild.startTag?.endOffset ?? nodeChild.endOffset
+        })
+        
       } 
       else {
         console.error(`didn't find a valid html tag, found: ${attr.name}=${JSON.stringify(attr.value)}`);
@@ -119,17 +126,17 @@ Array<{content: informationOfPropertiesOffsetFormat }> {
   if (node.childNodes) {
     for (const child of node.childNodes) traverseNode(child, depth + 1, offsetsOfPropertiesMap);
   }
-  return offsetsOfPropertiesMap;
+  return vscodee;
 }
 
 function createPositions( templateTag: string,
                           templateStartPos: positionOfContent, 
-                          item: informationOfPropertiesOffsetFormat): { globalStartOffset: number;
+                          startOff: number, endOff: number): { globalStartOffset: number;
                                                                         globalEndOffset: number } 
 { // +1 for the opening bracket of the tag
-  const globalStartOffset = item.positions.startPos + templateStartPos.startPos + templateTag.length + 1; 
+  const globalStartOffset = startOff + templateStartPos.startPos + templateTag.length + 1; 
   // +1 for the opening bracket of the tag
-  const globalEndOffset = item.positions.endPos + templateStartPos.startPos + templateTag.length + 1; 
+  const globalEndOffset = endOff + templateStartPos.startPos + templateTag.length + 1; 
 
   return { globalStartOffset: globalStartOffset, globalEndOffset: globalEndOffset };  
 }
@@ -138,37 +145,62 @@ function diagnosticPrinter( ps:Parse5,
                             HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
                             document: vscode.TextDocument):void 
 {
+  const validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
+
+
   // local diagnostic collection to fill with errors from every template
   const diagnosticCollection: vscode.Diagnostic[] = [];
-  
   // extracting each html property from each template and registering diagnostic if found
   for (const elementOfHtmlTemplateArray of HtmlTemplateArray){
     
     // Parsing the found template with relative offsets
     const parsedHtml = ps.parseFragment(elementOfHtmlTemplateArray?.content, { sourceCodeLocationInfo: true });
+    for (const node of parsedHtml.childNodes) {
+    const arrayOfExtractedHtmlContent = traverseNode(node);
       
-    const arrayOfExtractedHtmlContent = traverseNode(parsedHtml);
-    
-      for (const [_ ,item ] of arrayOfExtractedHtmlContent.entries()) {
+      if (validTagNames.has(arrayOfExtractedHtmlContent.name)){
+        
+        for (const item of arrayOfExtractedHtmlContent.attributes) {
+        
+          const validAttributeNames = new Set(htmlLanguageService.provideAttributes(arrayOfExtractedHtmlContent.name).map(t => t.name))
+          const customValidAttributeNames = new Set(myOwnAttributes.provideAttributes(arrayOfExtractedHtmlContent.name).map(t => t.name))
 
-        if(!tagContext.isAllowed(item.content.propertyName) && item.content.propertyName !== "#text") {
+        if(item.name !== "#text" && !validAttributeNames.has(item.name) && !customValidAttributeNames.has(item.name)) {
 
           const tagPositions = createPositions( elementOfHtmlTemplateArray.tag,
                                                 elementOfHtmlTemplateArray.Pos, 
-                                                item.content);
+                                                item.startOffset,item.endOffset);
           
           const newDiagnostic = new vscode.Diagnostic(
               new vscode.Range(
                 document.positionAt(tagPositions.globalStartOffset),
                 document.positionAt(tagPositions.globalEndOffset)
               ),
-              `Propertie ${item.content.propertyName} is unknown. Check for typos.`,
+              `Propertie ${item.name} is unknown. Check for typos.`,
               vscode.DiagnosticSeverity.Warning
             );
             diagnosticCollection.push(newDiagnostic);
         }
+        }
+
+      }
+      else{
+        const tagPositions = createPositions( elementOfHtmlTemplateArray.tag,
+                                                elementOfHtmlTemplateArray.Pos, 
+                                                arrayOfExtractedHtmlContent.startOffset,arrayOfExtractedHtmlContent.endOffset);
+          
+          const newDiagnostic = new vscode.Diagnostic(
+              new vscode.Range(
+                document.positionAt(tagPositions.globalStartOffset),
+                document.positionAt(tagPositions.globalEndOffset)
+              ),
+              `Propertie ${arrayOfExtractedHtmlContent.name} is unknown. Check for typos.`,
+              vscode.DiagnosticSeverity.Warning
+            );
+            diagnosticCollection.push(newDiagnostic);
+        }
+      }
     }
-}
   // set diagnostics
   errorCollection.set(document.uri, diagnosticCollection);
 }
@@ -177,7 +209,6 @@ export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
   const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
   context.subscriptions.push(diagnostics);
-
 
   const disposable = vscode.commands.registerCommand("helloworld.helloWorld", () => 
     {
