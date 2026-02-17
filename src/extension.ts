@@ -3,28 +3,25 @@ import { extractHtmlTemplates,extractCssTemplates } from './document/html-docume
 import { printInternalMessage } from "./utils/internalPrinter";
 import * as htmlService from "vscode-html-languageservice";
 import {ITagData} from "./interface/tagData"
-import { customElement } from "./class/customElement";
+import { CustomElement } from "./class/customElement";
 import * as cssService from "vscode-css-languageservice"
-import { isUndefined } from "util";
-import { Stylesheet } from "vscode-css-languageservice";
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
-type positionOfContent = { startPos: number; endPos: number };
-
-
-
+type PositionOfContent = { startPos: number; endPos: number };
 // error collection of vs code
 const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
-
 // imported objects
 const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
-const cssLanguageService = cssService.getCSSLanguageService()
-const customHtmlElements = new customElement;
 
-function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
-  contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>,
-  contentArrayOfCssTemplates:Array<{ tag: string; content: string; Pos: positionOfContent }>
+const cssLanguageService = cssService.getCSSLanguageService()
+
+const customHtmlElements = new CustomElement;
+
+function extractHtmlAndCssBlocks(document: vscode.TextDocument
+): {
+  contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; pos: PositionOfContent }>,
+  contentArrayOfCssTemplates:Array<{ tag: string; content: string; pos: PositionOfContent }>
 } 
 {
   // vs code document text
@@ -34,17 +31,16 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
   // extracted css templates found in documentText
   const cssTemplates = extractCssTemplates(documentText);
   // Arrays to return
-  const contentArrayOfHtmlTemplates: Array<{ tag: string; content: string; Pos: positionOfContent }> = [];
+  const contentArrayOfHtmlTemplates: Array<{ tag: string; content: string; pos: PositionOfContent }> = [];
   
-  const contentArrayOfCssTemplates: Array<{ tag: string; content: string; Pos: positionOfContent }> = [];
+  const contentArrayOfCssTemplates: Array<{ tag: string; content: string; pos: PositionOfContent }> = [];
 
   htmlTemplates.forEach((template, i) => 
     {
-    contentArrayOfHtmlTemplates.push({tag: template.tag, 
-                                      content: template.content, 
-                                      Pos: {startPos: template.startPos, endPos: template.endPos} 
-                                  }
-                                );
+    contentArrayOfHtmlTemplates.push({
+      tag: template.tag, 
+      content: template.content, 
+      pos: {startPos: template.startPos, endPos: template.endPos}});
     }
   );
   cssTemplates.forEach((template, i) => 
@@ -53,11 +49,10 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
                          document.getText(new vscode.Range(document.positionAt(template.startPos), 
                                                            document.positionAt(template.startPos + 1))),
                          template.content)
-    contentArrayOfCssTemplates.push({tag: template.tag, 
-                                      content: template.content, 
-                                      Pos: {startPos: template.startPos, endPos: template.endPos} 
-                                  }
-                                );
+    contentArrayOfCssTemplates.push({
+      tag: template.tag, 
+      content: template.content, 
+      pos: {startPos: template.startPos, endPos: template.endPos}});
     }
   );
   return {
@@ -102,8 +97,8 @@ function extractTagWithAttr(templateTag: any): ITagData {
           name: attr.name,
           startOffset: nodeChild.startTag?.startOffset ?? nodeChild.startOffset,
           endOffset: nodeChild.startTag?.endOffset ?? nodeChild.endOffset
-        })
-        
+          }
+        )
       } 
       else {
         console.error(`didn't find a valid html tag, found: ${attr.name}=${JSON.stringify(attr.value)}`);
@@ -113,11 +108,14 @@ function extractTagWithAttr(templateTag: any): ITagData {
   return singleTagData;
 }
 
-function createPositions( templateTag: string,
-                          templateStartPos: positionOfContent, 
-                          startOff: number, endOff: number): { globalStartOffset: number;
-                                                                        globalEndOffset: number } 
-{ // +1 for the opening backtick of the tag
+
+function createPositions( 
+  templateTag: string,
+  templateStartPos: PositionOfContent, 
+  startOff: number, endOff: number)
+:{ globalStartOffset: number; globalEndOffset: number } 
+{ 
+  // +1 for the opening backtick of the tag
   const globalStartOffset = startOff + templateStartPos.startPos + templateTag.length + 1; 
   // +1 for the opening backtick of the tag
   const globalEndOffset = endOff + templateStartPos.startPos + templateTag.length + 1; 
@@ -125,17 +123,19 @@ function createPositions( templateTag: string,
   return { globalStartOffset: globalStartOffset, globalEndOffset: globalEndOffset };  
 }
 
-function diagnosticPrinter( ps:Parse5,
-                            HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
-                            document: vscode.TextDocument,
-                            diagnosticCollection: vscode.Diagnostic[]):
-                            void 
+
+function diagnosticPrinter( 
+  ps: Parse5,
+  htmlTemplateArray: Array<{ tag: string; content: string; pos: PositionOfContent }>,
+  document: vscode.TextDocument,
+  diagnosticCollection: vscode.Diagnostic[]
+):void 
 {
   const validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
 
   // local diagnostic collection to fill with errors from every template
   // extracting each html property from each template and registering diagnostic if found
-  for (const singleBlockOfHtmlTemplate of HtmlTemplateArray){
+  for (const singleBlockOfHtmlTemplate of htmlTemplateArray){
     
     // Parsing the found template with relative offsets
     const parsedHtml = ps.parseFragment(singleBlockOfHtmlTemplate?.content, { sourceCodeLocationInfo: true });
@@ -160,7 +160,7 @@ function diagnosticPrinter( ps:Parse5,
             ) {
 
             const positionOfElement = createPositions(singleBlockOfHtmlTemplate.tag,
-                                                      singleBlockOfHtmlTemplate.Pos, 
+                                                      singleBlockOfHtmlTemplate.pos, 
                                                       item.startOffset,item.endOffset
                                                     );
             diagnosticCollection.push(
@@ -178,7 +178,7 @@ function diagnosticPrinter( ps:Parse5,
       else{
         if(!extractedHtmlContent.name === undefined && extractedHtmlContent.name && extractedHtmlContent.name !== "#text"){
         const tagPositions = createPositions( singleBlockOfHtmlTemplate.tag,
-                                                singleBlockOfHtmlTemplate.Pos, 
+                                                singleBlockOfHtmlTemplate.pos, 
                                                 extractedHtmlContent.startOffset,extractedHtmlContent.endOffset);
 
           diagnosticCollection.push(
@@ -193,14 +193,17 @@ function diagnosticPrinter( ps:Parse5,
         }
       }
     }
-    }
+  }
   // set diagnostics
   errorCollection.set(document.uri, diagnosticCollection);
 }
 
-function cssDiagnosticPrinter(CssTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
-                            document: vscode.TextDocument,
-                            diagnosticCollection: vscode.Diagnostic[]):void
+
+function cssDiagnosticPrinter(
+  CssTemplateArray: Array<{ tag: string; content: string; pos: PositionOfContent }>,
+  document: vscode.TextDocument,
+  diagnosticCollection: vscode.Diagnostic[]
+):void
   {
     
     for (const singleBlockOfCssTemplate of CssTemplateArray){
@@ -220,17 +223,19 @@ function cssDiagnosticPrinter(CssTemplateArray: Array<{ tag: string; content: st
 
         const globalOffsets = createPositions(
           singleBlockOfCssTemplate.tag,
-          singleBlockOfCssTemplate.Pos,
+          singleBlockOfCssTemplate.pos,
           virtualDocumentCssLangServ.offsetAt(
             new vscode.Position( 
               singleDiagnostic.range.start.line, 
               singleDiagnostic.range.start.character
-            )),
+            )
+          ),
           virtualDocumentCssLangServ.offsetAt(
             new vscode.Position( 
               singleDiagnostic.range.end.line, 
               singleDiagnostic.range.end.character
-            ))
+            )
+          )
         );
         diagnosticCollection.push(
           createVscodeDiagnostic(
@@ -245,11 +250,13 @@ function cssDiagnosticPrinter(CssTemplateArray: Array<{ tag: string; content: st
   }
 }
 
-function createVscodeDiagnostic(globalStartOffset:number, 
-                                globalEndOffset: number, 
-                                diagnosticMessage: string, 
-                                diagnosticSeverity: vscode.DiagnosticSeverity,
-                                document: vscode.TextDocument):vscode.Diagnostic{
+function createVscodeDiagnostic(
+  globalStartOffset:number, 
+  globalEndOffset: number, 
+  diagnosticMessage: string, 
+  diagnosticSeverity: vscode.DiagnosticSeverity,
+  document: vscode.TextDocument
+):vscode.Diagnostic{
                                   
     const newDiagnostic = new vscode.Diagnostic(
     new vscode.Range(
@@ -288,6 +295,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const templates = extractHtmlAndCssBlocks(doc);
             diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc,diagnosticCollection);
             cssDiagnosticPrinter(templates.contentArrayOfCssTemplates,doc,diagnosticCollection)
+            
             errorCollection.set(doc.uri,diagnosticCollection)
             }
             )
@@ -301,7 +309,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
       }
     }
-    );
+  );
   
   context.subscriptions.push(disposable);
 };

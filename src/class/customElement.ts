@@ -1,7 +1,7 @@
 import { IHTMLDataProvider, ITagData, IAttributeData, IValueData } from 'vscode-html-languageservice';
 
 // Eigener Data Provider
-class customElement implements IHTMLDataProvider {
+class CustomElement implements IHTMLDataProvider {
   private customTags: ITagData[] = [
     {
       name: 'input',
@@ -45,4 +45,4 @@ class customElement implements IHTMLDataProvider {
     return [];
   }
 }
-export { customElement };
+export { CustomElement };
