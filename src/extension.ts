@@ -6,6 +6,8 @@ import {ITagData} from "./interface/tagData"
 import { customElement } from "./class/customElement";
 import * as cssService from "vscode-css-languageservice"
 import { isUndefined } from "util";
+import { Stylesheet } from "vscode-css-languageservice";
+import { TextDocument } from 'vscode-languageserver-textdocument';
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
 type positionOfContent = { startPos: number; endPos: number };
@@ -17,7 +19,7 @@ const errorCollection = vscode.languages.createDiagnosticCollection("myExtension
 
 // imported objects
 const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
-const cssLanguageService = cssService.getDefaultCSSDataProvider()
+const cssLanguageService = cssService.getCSSLanguageService()
 const customHtmlElements = new customElement;
 
 function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
@@ -51,6 +53,11 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument): {
                          document.getText(new vscode.Range(document.positionAt(template.startPos), 
                                                            document.positionAt(template.startPos + 1))),
                          template.content)
+    contentArrayOfCssTemplates.push({tag: template.tag, 
+                                      content: template.content, 
+                                      Pos: {startPos: template.startPos, endPos: template.endPos} 
+                                  }
+                                );
     }
   );
   return {
@@ -120,13 +127,13 @@ function createPositions( templateTag: string,
 
 function diagnosticPrinter( ps:Parse5,
                             HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
-                            document: vscode.TextDocument):
+                            document: vscode.TextDocument,
+                            diagnosticCollection: vscode.Diagnostic[]):
                             void 
 {
   const validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
 
   // local diagnostic collection to fill with errors from every template
-  const diagnosticCollection: vscode.Diagnostic[] = [];
   // extracting each html property from each template and registering diagnostic if found
   for (const singleBlockOfHtmlTemplate of HtmlTemplateArray){
     
@@ -182,7 +189,6 @@ function diagnosticPrinter( ps:Parse5,
             `Tag ${extractedHtmlContent.name} is unknown. Check for typos.`,
             vscode.DiagnosticSeverity.Warning
           );
-          diagnosticCollection.push(newDiagnostic);
         }
       }
     }
@@ -190,6 +196,55 @@ function diagnosticPrinter( ps:Parse5,
   // set diagnostics
   errorCollection.set(document.uri, diagnosticCollection);
 }
+
+function cssDiagnosticPrinter(CssTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
+                            document: vscode.TextDocument,
+                            diagnosticCollection: vscode.Diagnostic[]):void
+  {
+    
+    for (const singleBlockOfCssTemplate of CssTemplateArray){
+
+      const virtualDocumentCssLangServ = TextDocument.create( document.uri.toString(),
+                                                              'css',
+                                                              document.version,
+                                                              singleBlockOfCssTemplate.content)
+      
+      
+      const diagnostic = cssLanguageService.doValidation( virtualDocumentCssLangServ,
+                                                          cssLanguageService.parseStylesheet(
+                                                            virtualDocumentCssLangServ))
+      
+      for (const singleDiagnostic of diagnostic){
+        
+        const diagnosticSeverity = singleDiagnostic.severity!.valueOf as unknown as vscode.DiagnosticSeverity
+
+        const globalOffsets = createPositions(
+          singleBlockOfCssTemplate.tag,
+          singleBlockOfCssTemplate.Pos,
+          virtualDocumentCssLangServ.offsetAt(
+            new vscode.Position( 
+              singleDiagnostic.range.start.line, 
+              singleDiagnostic.range.start.character
+            )),
+          virtualDocumentCssLangServ.offsetAt(
+            new vscode.Position( 
+              singleDiagnostic.range.end.line, 
+              singleDiagnostic.range.end.character
+            ))
+        );
+
+        const newDiagnostic = new vscode.Diagnostic(
+              new vscode.Range(
+                document.positionAt(globalOffsets.globalStartOffset),
+                document.positionAt(globalOffsets.globalEndOffset)
+              ),
+              singleDiagnostic.message,
+              diagnosticSeverity
+            );
+            diagnosticCollection.push(newDiagnostic)
+      }
+  }
+  }
 
 export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
@@ -212,8 +267,12 @@ export async function activate(context: vscode.ExtensionContext) {
             key, setTimeout
             (() => 
             {
+            const diagnosticCollection: vscode.Diagnostic[] = [];
+            
             const templates = extractHtmlAndCssBlocks(doc);
-            diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc);
+            diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc,diagnosticCollection);
+            cssDiagnosticPrinter(templates.contentArrayOfCssTemplates,doc,diagnosticCollection)
+            errorCollection.set(doc.uri,diagnosticCollection)
             }
             )
           )
