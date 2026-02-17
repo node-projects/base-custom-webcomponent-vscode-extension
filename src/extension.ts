@@ -75,6 +75,10 @@ function extractTagWithAttr(templateTag: any): ITagData {
     
   } else {
     console.error(`didn't find a valid html tag, found: ${templateTag.nodeName}`);
+    singleTagData.name = templateTag.nodeName
+    singleTagData.attributes = []
+    singleTagData.startOffset = templateTagLocation.startTag?.startOffset ?? templateTagLocation.startOffset
+    singleTagData.endOffset = templateTagLocation.startTag?.endOffset ?? templateTagLocation.endOffset
   }
 
   // Attribute + deren Positionen
@@ -106,9 +110,9 @@ function createPositions( templateTag: string,
                           templateStartPos: positionOfContent, 
                           startOff: number, endOff: number): { globalStartOffset: number;
                                                                         globalEndOffset: number } 
-{ // +1 for the opening bracket of the tag
+{ // +1 for the opening backtick of the tag
   const globalStartOffset = startOff + templateStartPos.startPos + templateTag.length + 1; 
-  // +1 for the opening bracket of the tag
+  // +1 for the opening backtick of the tag
   const globalEndOffset = endOff + templateStartPos.startPos + templateTag.length + 1; 
 
   return { globalStartOffset: globalStartOffset, globalEndOffset: globalEndOffset };  
@@ -116,7 +120,8 @@ function createPositions( templateTag: string,
 
 function diagnosticPrinter( ps:Parse5,
                             HtmlTemplateArray: Array<{ tag: string; content: string; Pos: positionOfContent }>,
-                            document: vscode.TextDocument):void 
+                            document: vscode.TextDocument):
+                            void 
 {
   const validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
 
@@ -131,7 +136,7 @@ function diagnosticPrinter( ps:Parse5,
     for (const node of parsedHtml.childNodes) {
     
       const extractedHtmlContent = extractTagWithAttr(node);
-      
+
       if (validTagNames.has(extractedHtmlContent.name)){
         
         for (const item of extractedHtmlContent.attributes) {
@@ -164,7 +169,7 @@ function diagnosticPrinter( ps:Parse5,
         }
       }
       else{
-        //if(!extractedHtmlContent.name === undefined ){
+        if(!extractedHtmlContent.name === undefined && extractedHtmlContent.name && extractedHtmlContent.name !== "#text"){
         const tagPositions = createPositions( singleBlockOfHtmlTemplate.tag,
                                                 singleBlockOfHtmlTemplate.Pos, 
                                                 extractedHtmlContent.startOffset,extractedHtmlContent.endOffset);
@@ -178,7 +183,7 @@ function diagnosticPrinter( ps:Parse5,
             vscode.DiagnosticSeverity.Warning
           );
           diagnosticCollection.push(newDiagnostic);
-        //}
+        }
       }
     }
     }
