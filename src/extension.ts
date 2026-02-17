@@ -159,19 +159,19 @@ function diagnosticPrinter( ps:Parse5,
               !customValidAttributeNames.has(item.name)
             ) {
 
-            const positionOfElement = createPositions( singleBlockOfHtmlTemplate.tag,
-                                                  singleBlockOfHtmlTemplate.Pos, 
-                                                  item.startOffset,item.endOffset);
-            
-            const newDiagnostic = new vscode.Diagnostic(
-              new vscode.Range(
-                document.positionAt(positionOfElement.globalStartOffset),
-                document.positionAt(positionOfElement.globalEndOffset)
-              ),
-              `Attribute ${item.name} is unknown or not valid for ${extractedHtmlContent.name}.`,
-              vscode.DiagnosticSeverity.Warning
+            const positionOfElement = createPositions(singleBlockOfHtmlTemplate.tag,
+                                                      singleBlockOfHtmlTemplate.Pos, 
+                                                      item.startOffset,item.endOffset
+                                                    );
+            diagnosticCollection.push(
+              createVscodeDiagnostic(
+                positionOfElement.globalStartOffset,
+                positionOfElement.globalEndOffset,
+                `Attribute ${item.name} is unknown or not valid for ${extractedHtmlContent.name}.`,
+                vscode.DiagnosticSeverity.Warning,
+                document
+              )
             );
-            diagnosticCollection.push(newDiagnostic);
           }
         }
       }
@@ -180,14 +180,15 @@ function diagnosticPrinter( ps:Parse5,
         const tagPositions = createPositions( singleBlockOfHtmlTemplate.tag,
                                                 singleBlockOfHtmlTemplate.Pos, 
                                                 extractedHtmlContent.startOffset,extractedHtmlContent.endOffset);
-          
-        const newDiagnostic = new vscode.Diagnostic(
-            new vscode.Range(
-              document.positionAt(tagPositions.globalStartOffset),
-              document.positionAt(tagPositions.globalEndOffset)
-            ),
-            `Tag ${extractedHtmlContent.name} is unknown. Check for typos.`,
-            vscode.DiagnosticSeverity.Warning
+
+          diagnosticCollection.push(
+            createVscodeDiagnostic(
+              tagPositions.globalStartOffset,
+              tagPositions.globalEndOffset,
+              `Tag ${extractedHtmlContent.name} is unknown. Check for typos.`,
+              vscode.DiagnosticSeverity.Warning,
+              document
+            )
           );
         }
       }
@@ -208,7 +209,6 @@ function cssDiagnosticPrinter(CssTemplateArray: Array<{ tag: string; content: st
                                                               'css',
                                                               document.version,
                                                               singleBlockOfCssTemplate.content)
-      
       
       const diagnostic = cssLanguageService.doValidation( virtualDocumentCssLangServ,
                                                           cssLanguageService.parseStylesheet(
@@ -232,19 +232,35 @@ function cssDiagnosticPrinter(CssTemplateArray: Array<{ tag: string; content: st
               singleDiagnostic.range.end.character
             ))
         );
+        diagnosticCollection.push(
+          createVscodeDiagnostic(
+            globalOffsets.globalStartOffset,
+            globalOffsets.globalEndOffset,
+            singleDiagnostic.message,
+            diagnosticSeverity,
+            document
+        )
+      )
+    }
+  }
+}
 
-        const newDiagnostic = new vscode.Diagnostic(
-              new vscode.Range(
-                document.positionAt(globalOffsets.globalStartOffset),
-                document.positionAt(globalOffsets.globalEndOffset)
-              ),
-              singleDiagnostic.message,
-              diagnosticSeverity
-            );
-            diagnosticCollection.push(newDiagnostic)
-      }
-  }
-  }
+function createVscodeDiagnostic(globalStartOffset:number, 
+                                globalEndOffset: number, 
+                                diagnosticMessage: string, 
+                                diagnosticSeverity: vscode.DiagnosticSeverity,
+                                document: vscode.TextDocument):vscode.Diagnostic{
+                                  
+    const newDiagnostic = new vscode.Diagnostic(
+    new vscode.Range(
+      document.positionAt(globalStartOffset),
+      document.positionAt(globalEndOffset)
+    ),
+    diagnosticMessage,
+    diagnosticSeverity
+  );
+  return newDiagnostic
+}
 
 export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
