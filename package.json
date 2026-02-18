@@ -1,6 +1,6 @@
 {
-  "name": "helloworld",
-  "displayName": "New Extension",
+  "name": "html-css-template-validator",
+  "displayName": "Html-Css Template Validator",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:helloworld.helloWorld"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -95,12 +95,6 @@
           "source.css.scss": "css",
           "meta.embedded.line.ts": "typescript"
         }
-      }
-    ],
-    "commands": [
-      {
-        "command": "helloworld.helloWorld",
-        "title": "Hello World"
       }
     ]
   },

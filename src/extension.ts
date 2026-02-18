@@ -273,47 +273,47 @@ function createVscodeDiagnostic(
 
 export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
+  
   const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
+  
   context.subscriptions.push(diagnostics);
 
-  const disposable = vscode.commands.registerCommand("helloworld.helloWorld", () => 
-    {
-    vscode.window.showInformationMessage("Html validator is now active");
-    const editor = vscode.window.activeTextEditor;
-    if (editor) 
-      {
-        const timers = new Map<string, NodeJS.Timeout>();
-        const schedule = (doc: vscode.TextDocument) => {
-          const key = doc.uri.toString();
-          const prev = timers.get(key);
-          if (prev) clearTimeout(prev);
-          timers.set
-          (
-            key, setTimeout
-            (() => 
-            {
-            const diagnosticCollection: vscode.Diagnostic[] = [];
-            
-            const templates = extractHtmlAndCssBlocks(doc);
-            if (!templates){return}
-            diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc,diagnosticCollection);
-            cssDiagnosticPrinter(templates.contentArrayOfCssTemplates,doc,diagnosticCollection)
-            
-            errorCollection.set(doc.uri,diagnosticCollection)
-            }
-            )
-          )
-        }
-
-        context.subscriptions.push(
-          vscode.workspace.onDidChangeTextDocument((e) => schedule(e.document)),
-          vscode.workspace.onDidOpenTextDocument((doc) => schedule(doc)),
-          vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri))
-        );
-      }
-    }
-  );
+  //const disposable = vscode.commands.registerCommand("htmlCssTemplateValidator.validateDdocument", () => {
+  vscode.window.showInformationMessage("Validator is now active");
   
-  context.subscriptions.push(disposable);
+  const editor = vscode.window.activeTextEditor;
+  
+  if (editor) 
+    {
+      const timers = new Map<string, NodeJS.Timeout>();
+      const schedule = (doc: vscode.TextDocument) => {
+        if (timers.get(doc.uri.toString())) clearTimeout(timers.get(doc.uri.toString()));
+        timers.set
+        (
+          doc.uri.toString(), setTimeout
+          (() => 
+          {
+          const diagnosticCollection: vscode.Diagnostic[] = [];
+          
+          const templates = extractHtmlAndCssBlocks(doc);
+          if (!templates){return}
+          diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc,diagnosticCollection);
+          cssDiagnosticPrinter(templates.contentArrayOfCssTemplates,doc,diagnosticCollection)
+          
+          errorCollection.set(doc.uri,diagnosticCollection)
+          }
+          )
+        )
+      }
+
+      context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument((e) => schedule(e.document)),
+        vscode.workspace.onDidOpenTextDocument((doc) => schedule(doc)),
+        vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri))
+      );
+    };
+    //});
+  
+  //context.subscriptions.push(disposable);
 };
 export function deactivate() {}
