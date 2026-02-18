@@ -1,18 +1,9 @@
 import * as vscode from "vscode";
 import { extractHtmlTemplates,extractCssTemplates } from './document/html-document/parse/html-tag-extractor';
-import { printInternalMessage } from "./utils/internalPrinter";
-import * as htmlService from "vscode-html-languageservice";
-import {ITagData} from "./interface/tagData"
-import { CustomElement } from "./class/customElement";
 import * as cssService from "vscode-css-languageservice"
-import { TextDocument } from 'vscode-languageserver-textdocument';
-import { GlobalOffsets } from "./interface/GlobalOffsets";
-import { PositionOfContent } from "./interface/PositionOfContent";
 import { HtmlTagTemplate } from "./interface/IHtmlTemplate";
 import { CssTagTemplate } from "./interface/ICssTemplate";
 import {HtmlValidator} from "./class/HtmlValidator"
-import { createPositions } from "./utils/createPosition";
-import { createVscodeDiagnostic } from "./utils/createVscodeDiagnostic";
 import { CssValidator } from "./class/CssValidator";
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
@@ -81,13 +72,15 @@ function htmlValidator(
   ).validate(htmlTemplateArray);
 }
 
-function cssValidator(CssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>,
+function cssValidator(
+  cssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>,
   document: vscode.TextDocument,
   diagnosticCollection: vscode.Diagnostic[],
-  cssLanguageService: cssService.LanguageService)
+  cssLanguageService: cssService.LanguageService
+):void
   {
     const validator = new CssValidator(
-      CssTemplateArray,
+      cssTemplateArray,
       document,
       diagnosticCollection,
       cssLanguageService
@@ -102,7 +95,6 @@ export async function activate(context: vscode.ExtensionContext) {
   
   context.subscriptions.push(diagnostics);
 
-  //const disposable = vscode.commands.registerCommand("htmlCssTemplateValidator.validateDdocument", () => {
   vscode.window.showInformationMessage("Validator is now active");
   
   const editor = vscode.window.activeTextEditor;
@@ -136,8 +128,5 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri))
       );
     };
-    //});
-  
-  //context.subscriptions.push(disposable);
 };
 export function deactivate() {}

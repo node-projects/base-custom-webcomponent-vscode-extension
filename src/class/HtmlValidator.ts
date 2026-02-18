@@ -13,29 +13,23 @@ const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
 const customHtmlElements = new CustomElement();
 
 export class HtmlValidator implements IHtmlValidator {
+  
   private validTagNames: Set<string>;
   private ps: Parse5;
   private document: vscode.TextDocument;
-  private diagnosticCollection: vscode.Diagnostic[];
-  private errorCollection: vscode.DiagnosticCollection
+  diagnosticCollection: vscode.Diagnostic[];
 
-  constructor(
-    ps: Parse5,
-    document: vscode.TextDocument,
-    diagnosticCollection: vscode.Diagnostic[]
-  ) {
+  constructor(ps: Parse5,document: vscode.TextDocument,diagnosticCollection: vscode.Diagnostic[]) {
     this.ps = ps;
     this.document = document;
     this.diagnosticCollection = diagnosticCollection;
     this.validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
-    this.errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
   }
 
   validate(htmlTemplateArray: Array<{ htmlTemplate: HtmlTagTemplate }>): void {
     for (const template of htmlTemplateArray) {
       this.validateTemplate(template);
     }
-    this.errorCollection.set(this.document.uri, this.diagnosticCollection);
   }
 
   private validateTemplate(template: { htmlTemplate: HtmlTagTemplate }): void {
