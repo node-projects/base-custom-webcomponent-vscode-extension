@@ -6,22 +6,25 @@ import {ITagData} from "./interface/tagData"
 import { CustomElement } from "./class/customElement";
 import * as cssService from "vscode-css-languageservice"
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { GlobalOffsets } from "./interface/GlobalOffsets";
+import { PositionOfContent } from "./interface/PositionOfContent";
+import { HtmlTagTemplate } from "./interface/IHtmlTemplate";
+import { CssTagTemplate } from "./interface/ICssTemplate";
+import {HtmlValidator} from "./class/HtmlValidator"
+import { createPositions } from "./utils/createPosition";
+import { createVscodeDiagnostic } from "./utils/createVscodeDiagnostic";
+import { CssValidator } from "./class/CssValidator";
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
-type PositionOfContent = { startPos: number; endPos: number };
 // error collection of vs code
 const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
-// imported objects
-const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
 
 const cssLanguageService = cssService.getCSSLanguageService()
 
-const customHtmlElements = new CustomElement;
-
 function extractHtmlAndCssBlocks(document: vscode.TextDocument
 ): {
-  contentArrayOfHtmlTemplates:Array<{ tag: string; content: string; pos: PositionOfContent }>,
-  contentArrayOfCssTemplates:Array<{ tag: string; content: string; pos: PositionOfContent }> 
+  contentArrayOfHtmlTemplates:Array<{ htmlTemplate: HtmlTagTemplate }>,
+  contentArrayOfCssTemplates:Array<{ cssTemplate: CssTagTemplate }> 
 } | undefined
 {
   // vs code document text
@@ -31,24 +34,26 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument
   // extracted css templates found in documentText
   const cssTemplates = extractCssTemplates(documentText);
   // Arrays to return
-  const contentArrayOfHtmlTemplates: Array<{ tag: string; content: string; pos: PositionOfContent }> = [];
+  const contentArrayOfHtmlTemplates: Array<{ htmlTemplate: HtmlTagTemplate }> = [];
   
-  const contentArrayOfCssTemplates: Array<{ tag: string; content: string; pos: PositionOfContent }> = [];
+  const contentArrayOfCssTemplates: Array<{ cssTemplate: CssTagTemplate }> = [];
 
   htmlTemplates.forEach((template, i) => 
     {
     contentArrayOfHtmlTemplates.push({
+      htmlTemplate:{
       tag: template.tag, 
       content: template.content, 
-      pos: {startPos: template.startPos, endPos: template.endPos}});
+      pos: {startOffset: template.startPos, endOffset: template.endPos}}});
     }
   );
   cssTemplates.forEach((template, i) => 
     {
     contentArrayOfCssTemplates.push({
+      cssTemplate:{
       tag: template.tag, 
       content: template.content, 
-      pos: {startPos: template.startPos, endPos: template.endPos}});
+      pos: {startOffset: template.startPos, endOffset: template.endPos}}});
     }
   );
   if (contentArrayOfCssTemplates.length === 0 && contentArrayOfHtmlTemplates.length === 0){
@@ -61,215 +66,34 @@ function extractHtmlAndCssBlocks(document: vscode.TextDocument
     contentArrayOfHtmlTemplates: contentArrayOfHtmlTemplates
   };
 }
-function createTagData(tagData: ITagData,templateTag: any):void{
-  
-  tagData.name = templateTag.nodeName
-  tagData.attributes = []
-  tagData.startOffset = templateTag.sourceCodeLocation.startTag?.startOffset ?? templateTag.sourceCodeLocation.startOffset
-  tagData.endOffset = templateTag.sourceCodeLocation.startTag?.endOffset ?? templateTag.sourceCodeLocation.endOffset
-}
 
-function extractHtmlTagWithAttr(templateTag: any): ITagData {
-  
-  const singleTagData = {} as ITagData;
-
-  const templateTagLocation = templateTag.sourceCodeLocation;
-
-  if (templateTagLocation && templateTag.nodeName !== "#text") {
-    createTagData(singleTagData,templateTag)
-    
-  } else {
-    vscode.window.showErrorMessage(`didn't find a valid html tag, found: ${templateTag.nodeName}`)
-    createTagData(singleTagData,templateTag)
-  }
-
-  // Attribute + deren Positionen
-  if (templateTag.attrs && templateTag.attrs.length > 0) {
-    
-    for (const attr of templateTag.attrs) {
-      
-      const nodeChild = templateTagLocation?.attrs?.[attr.name]; // positions for this attribute
-      
-      if (nodeChild) {
-
-        singleTagData.attributes.push(
-          {
-          name: attr.name,
-          startOffset: nodeChild.startTag?.startOffset ?? nodeChild.startOffset,
-          endOffset: nodeChild.startTag?.endOffset ?? nodeChild.endOffset
-          }
-        )
-      } 
-      else {
-        vscode.window.showErrorMessage(`didn't find a valid html tag, found: ${attr.name}=${JSON.stringify(attr.value)}`)
-      }
-    }
-  }
-  return singleTagData;
-}
-
-
-function createPositions( 
-  templateTag: string,
-  templateStartPos: PositionOfContent, 
-  startOff: number, endOff: number)
-:{ globalStartOffset: number; globalEndOffset: number } 
-{ 
-  // +1 for the opening backtick of the tag
-  const globalStartOffset = startOff + templateStartPos.startPos + templateTag.length + 1; 
-  // +1 for the opening backtick of the tag
-  const globalEndOffset = endOff + templateStartPos.startPos + templateTag.length + 1; 
-
-  return { globalStartOffset: globalStartOffset, globalEndOffset: globalEndOffset };  
-}
-
-
-function diagnosticPrinter( 
+function htmlValidator(
   ps: Parse5,
-  htmlTemplateArray: Array<{ tag: string; content: string; pos: PositionOfContent }>,
-  document: vscode.TextDocument,
-  diagnosticCollection: vscode.Diagnostic[]
-):void 
-{
-  const validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
-
-  // local diagnostic collection to fill with errors from every template
-  // extracting each html property from each template and registering diagnostic if found
-  for (const singleBlockOfHtmlTemplate of htmlTemplateArray){
-    
-    // Parsing the found template with relative offsets
-    const parsedHtml = ps.parseFragment(singleBlockOfHtmlTemplate?.content, { sourceCodeLocationInfo: true });
-    
-    for (const node of parsedHtml.childNodes) {
-    
-      const extractedHtmlContent = extractHtmlTagWithAttr(node);
-
-      if (validTagNames.has(extractedHtmlContent.name)){
-        
-        for (const item of extractedHtmlContent.attributes) {
-        
-          const validAttributeNames = new Set(htmlLanguageService.provideAttributes(
-            extractedHtmlContent.name).map(t => t.name))
-          
-          const customValidAttributeNames = new Set(customHtmlElements.provideAttributes(
-            extractedHtmlContent.name).map(t => t.name))
-
-          if( item.name !== "#text" && 
-              !validAttributeNames.has(item.name) && 
-              !customValidAttributeNames.has(item.name)
-            ) {
-
-            const positionOfElement = createPositions(singleBlockOfHtmlTemplate.tag,
-                                                      singleBlockOfHtmlTemplate.pos, 
-                                                      item.startOffset,item.endOffset
-                                                    );
-            diagnosticCollection.push(
-              createVscodeDiagnostic(
-                positionOfElement.globalStartOffset,
-                positionOfElement.globalEndOffset,
-                `Attribute ${item.name} is unknown or not valid for ${extractedHtmlContent.name}.`,
-                vscode.DiagnosticSeverity.Warning,
-                document
-              )
-            );
-          }
-        }
-      }
-      else{
-        if(!extractedHtmlContent.name === undefined && extractedHtmlContent.name && extractedHtmlContent.name !== "#text"){
-        const tagPositions = createPositions( singleBlockOfHtmlTemplate.tag,
-                                                singleBlockOfHtmlTemplate.pos, 
-                                                extractedHtmlContent.startOffset,extractedHtmlContent.endOffset);
-
-          diagnosticCollection.push(
-            createVscodeDiagnostic(
-              tagPositions.globalStartOffset,
-              tagPositions.globalEndOffset,
-              `Tag ${extractedHtmlContent.name} is unknown. Check for typos.`,
-              vscode.DiagnosticSeverity.Warning,
-              document
-            )
-          );
-        }
-      }
-    }
-  }
-  // set diagnostics
-  errorCollection.set(document.uri, diagnosticCollection);
-}
-
-
-function cssDiagnosticPrinter(
-  CssTemplateArray: Array<{ tag: string; content: string; pos: PositionOfContent }>,
+  htmlTemplateArray: Array<{ htmlTemplate: HtmlTagTemplate }>,
   document: vscode.TextDocument,
   diagnosticCollection: vscode.Diagnostic[]
 ):void
+{
+  const validator = new HtmlValidator(
+    ps,
+    document,
+    diagnosticCollection,
+  ).validate(htmlTemplateArray);
+}
+
+function cssValidator(CssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>,
+  document: vscode.TextDocument,
+  diagnosticCollection: vscode.Diagnostic[],
+  cssLanguageService: cssService.LanguageService)
   {
-    
-    for (const singleBlockOfCssTemplate of CssTemplateArray){
-
-      const virtualDocumentCssLangServ = TextDocument.create( 
-        document.uri.toString(),
-        'css',
-        document.version,
-        singleBlockOfCssTemplate.content)
-      
-      const diagnostic = cssLanguageService.doValidation( 
-        virtualDocumentCssLangServ,
-        cssLanguageService.parseStylesheet(
-        virtualDocumentCssLangServ))
-      
-      for (const singleDiagnostic of diagnostic){
-        
-        const diagnosticSeverity = singleDiagnostic.severity!.valueOf as unknown as vscode.DiagnosticSeverity
-
-        const globalOffsets = createPositions(
-          singleBlockOfCssTemplate.tag,
-          singleBlockOfCssTemplate.pos,
-          virtualDocumentCssLangServ.offsetAt(
-            new vscode.Position( 
-              singleDiagnostic.range.start.line, 
-              singleDiagnostic.range.start.character
-            )
-          ),
-          virtualDocumentCssLangServ.offsetAt(
-            new vscode.Position( 
-              singleDiagnostic.range.end.line, 
-              singleDiagnostic.range.end.character
-            )
-          )
-        );
-        diagnosticCollection.push(
-          createVscodeDiagnostic(
-            globalOffsets.globalStartOffset,
-            globalOffsets.globalEndOffset,
-            singleDiagnostic.message,
-            diagnosticSeverity,
-            document
-        )
-      )
-    }
-  }
+    const validator = new CssValidator(
+      CssTemplateArray,
+      document,
+      diagnosticCollection,
+      cssLanguageService
+    ).validate();
 }
 
-function createVscodeDiagnostic(
-  globalStartOffset:number, 
-  globalEndOffset: number, 
-  diagnosticMessage: string, 
-  diagnosticSeverity: vscode.DiagnosticSeverity,
-  document: vscode.TextDocument
-):vscode.Diagnostic{
-                                  
-    const newDiagnostic = new vscode.Diagnostic(
-    new vscode.Range(
-      document.positionAt(globalStartOffset),
-      document.positionAt(globalEndOffset)
-    ),
-    diagnosticMessage,
-    diagnosticSeverity
-  );
-  return newDiagnostic
-}
 
 export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
@@ -297,8 +121,8 @@ export async function activate(context: vscode.ExtensionContext) {
           
           const templates = extractHtmlAndCssBlocks(doc);
           if (!templates){return}
-          diagnosticPrinter(ps,templates.contentArrayOfHtmlTemplates,doc,diagnosticCollection);
-          cssDiagnosticPrinter(templates.contentArrayOfCssTemplates,doc,diagnosticCollection)
+          htmlValidator(ps,templates.contentArrayOfHtmlTemplates,doc,diagnosticCollection);
+          cssValidator(templates.contentArrayOfCssTemplates,doc,diagnosticCollection,cssLanguageService)
           
           errorCollection.set(doc.uri,diagnosticCollection)
           }
