@@ -1,4 +1,4 @@
-import { PositionOfContent } from "./PositionOfContent";
+import { PositionOfContent } from "./IPositionOfContent";
 export interface CssTagTemplate {
     tag: string; 
     content: string; 

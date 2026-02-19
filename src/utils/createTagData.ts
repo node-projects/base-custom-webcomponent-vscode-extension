@@ -1,4 +1,4 @@
-import {ITagData} from "../interface/tagData"
+import {ITagData} from "../interface/ITagData"
 
 export function createTagData(tagData: ITagData,templateTag: any):void{
   

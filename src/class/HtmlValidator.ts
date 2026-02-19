@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import * as htmlService from "vscode-html-languageservice";
-import {ITagData} from "../interface/tagData"
-import { CustomElement } from "../class/customElement";
+import { ITagData } from "../interface/ITagData"
+import { CustomElement } from "../class/CustomElement";
 import { HtmlTagTemplate } from "../interface/IHtmlTemplate";
-import {extractHtmlTagWithAttr} from "../utils/extractHtmlTagWithAttr"
+import { extractHtmlTagWithAttr } from "../utils/extractHtmlTagWithAttr"
 import { createPositions } from "../utils/createPosition";
 import { createVscodeDiagnostic } from "../utils/createVscodeDiagnostic";
 import { IHtmlValidator } from "../interface/IHtmlValidator";
@@ -99,7 +99,7 @@ export class HtmlValidator implements IHtmlValidator {
       createVscodeDiagnostic(
         positions.globalStartOffset,
         positions.globalEndOffset,
-        `Attribute ${attribute.name} is unknown or not valid for ${tagName}.`,
+        `Unknown property: "${attribute.name}"`,
         vscode.DiagnosticSeverity.Warning,
         this.document
       )
@@ -121,7 +121,7 @@ export class HtmlValidator implements IHtmlValidator {
       createVscodeDiagnostic(
         positions.globalStartOffset,
         positions.globalEndOffset,
-        `Tag ${tagData.name} is unknown. Check for typos.`,
+        `Unknown property: "${tagData.name}"`,
         vscode.DiagnosticSeverity.Warning,
         this.document
       )

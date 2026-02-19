@@ -1,4 +1,4 @@
-import {ITagData} from "../interface/tagData"
+import {ITagData} from "../interface/ITagData"
 import * as vscode from "vscode"
 import {createTagData} from "./createTagData"
 

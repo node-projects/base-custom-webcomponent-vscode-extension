@@ -1,5 +1,5 @@
-import { GlobalOffsets } from "../interface/GlobalOffsets";
-import { PositionOfContent } from "../interface/PositionOfContent";
+import { GlobalOffsets } from "../interface/IGlobalOffsets";
+import { PositionOfContent } from "../interface/IPositionOfContent";
 
 export function createPositions( 
   templateTag: string,

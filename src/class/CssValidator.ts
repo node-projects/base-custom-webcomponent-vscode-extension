@@ -5,8 +5,7 @@ import * as cssService from "vscode-css-languageservice"
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { createPositions } from "../utils/createPosition";
 import { createVscodeDiagnostic } from "../utils/createVscodeDiagnostic";
-import { GlobalOffsets } from "../interface/GlobalOffsets";
-
+import { GlobalOffsets } from "../interface/IGlobalOffsets";
 
 export class CssValidator implements ICssValidator{
 
@@ -18,21 +17,30 @@ export class CssValidator implements ICssValidator{
 
     constructor(CssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>,
           document: vscode.TextDocument,
-          diagnosticCollection: vscode.Diagnostic[],
-          cssLanguageService:cssService.LanguageService){
+          diagnosticCollection: vscode.Diagnostic[]){
 
             this.CssTemplateArray = CssTemplateArray;
             this.document = document;
             this.diagnosticCollection = diagnosticCollection;
-            this.cssLanguageService = cssLanguageService
-          }
-    
+            this.cssLanguageService = cssService.getCSSLanguageService()
+    }
+
     validate():void{
         for (const singleBlockOfCssTemplate of this.CssTemplateArray){
-            const vald = this.validateBlockOfCss(singleBlockOfCssTemplate.cssTemplate)
-            }
+            this.validateBlockOfCss(singleBlockOfCssTemplate.cssTemplate)
         }
+    }
+
+    private validateBlockOfCss(singleBlockOfCssTemplate: CssTagTemplate){
+        const virtualDocumentCssLangServ = this.createVirtualDocument(singleBlockOfCssTemplate.content)
+                
+        const diagnosticCssLangServ = this.createDiagnosticCollForLangServ(virtualDocumentCssLangServ)
         
+        for (const singleDiagnostic of diagnosticCssLangServ){
+            this.createDiagnostic(singleDiagnostic,singleBlockOfCssTemplate,virtualDocumentCssLangServ)
+        }
+    }
+
     private createVirtualDocument(content: string):TextDocument{
         return TextDocument.create( this.document.uri.toString(),'css',this.document.version,content)
     }
@@ -42,16 +50,6 @@ export class CssValidator implements ICssValidator{
             virtualDocumentCssLangServ,
             this.cssLanguageService.parseStylesheet(
             virtualDocumentCssLangServ))
-    }
-
-    private validateBlockOfCss(singleBlockOfCssTemplate: CssTagTemplate){
-        const virtualDocumentCssLangServ = this.createVirtualDocument(singleBlockOfCssTemplate.content)
-                
-        const diagnosticCssLangServ = this.createDiagnosticCollForLangServ(virtualDocumentCssLangServ)
-        
-        for (const singleDiagnostic of diagnosticCssLangServ){
-        this.createDiagnostic(singleDiagnostic,singleBlockOfCssTemplate,virtualDocumentCssLangServ)
-        }
     }
 
     private createDiagnostic(singleDiagnostic:cssService.Diagnostic,singleBlockOfCssTemplate:CssTagTemplate,virtualDocumentCssLangServ:cssService.TextDocument){
