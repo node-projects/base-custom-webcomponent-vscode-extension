@@ -1,6 +1,6 @@
 # Lit-HTML & Styled Components Extension
 
-A VS Code extension that provides syntax highlighting and diagnostic features for lit-html templates and styled-components in JavaScript/TypeScript projects.
+A VS Code extension that provides syntax highlighting and diagnostic features for lit-html templates, styled-components and css-templates in JavaScript/TypeScript projects.
 This project builds on the Base-Custom-Components project.
 
 ## Features
@@ -61,25 +61,17 @@ static style = css`
 
 #### Commands
 
-Hello World: Sample command (Ctrl+Shift+P → "Hello World")
-Development
-Project Structure
+No command is required.
 
 ### Development
 
 ```Text
 ├── src/
 │   ├── [extension.ts](http://_vscodecontentref_/0)             #Main entry point of the extension 
-│   ├── internalPrinter.ts        # Logging utilities
-│   ├── document/
-│   │   ├── html-document/        # HTML parsing logic
-│   │   ├── css-document/         # CSS parsing logic
-│   │   ├── syntaxes/             # Syntax grammar definitions
-│   │   └── experiments/          # AST analysis and tests
-│   ├── utils/
-│   │   └── allowed-tags.ts       # Allowed HTML tags
-│   └── test/
-│       └── extension.test.ts     # Unit tests
+│   ├── class/                    # Validator-objects
+│   ├── document/                 # Syntax-highlighting-logic
+│   ├── utils/                    # Help components
+|   ├── interface/                # Required interfaces
 ```
 
 ### Dependencies
@@ -88,10 +80,11 @@ Important Dependencies
 
 ```Text
 parse5: HTML5-compliant parser
-node-html-parser: Fast HTML parser
 lit-analyzer: Analysis tools for lit-html
 vscode-html-languageservice: HTML language services
 vscode-css-languageservice: CSS language services
+vscode: Main accesspoint to the file & diagnostic
+typescript: Typescript types
 ```
 
 ### Technical Details
@@ -108,6 +101,81 @@ AST-Parsing: Analyzes template strings using Abstract Syntax Trees
 Known Limitations
 The extension is under active development
 Some experimental features are still in the experiments/ folder
+
+## Project Structure
+
+### 📁 Interfaces
+
+Contains custom type definitions and interfaces for type safety and structure clarity.
+
+### 📁 Utils
+
+Helper functions that provide core functionality:
+
+- `createPosition.ts` - Creates global document offset positions.
+
+- `createVscodeDiagnostic.ts` - Creates a vscode diagnostic.
+
+- `extractHtmlTemplateBlock.ts` - Extracts single html line for `extractHtmlTagWithAttr.ts`
+
+  ```html
+  <input type="checkbox" .checked="{{this.ee}}">
+  ```
+
+- `extractHtmlTagWithAttr.ts` - Extracts a whole tag with its attributes for createTagData.
+
+  ```Text
+  input
+  ├──Attr
+  | ├── type
+  | ├── .checked
+  ├──pos
+    ├── startoff
+    ├── endoff
+  ```
+
+- `createTagData.ts` - Creates a tag with its attributes and positions.
+
+- `internalPrinter.ts` - Helper for debugging.
+
+- `extractHtmlCssTemplateBlock.ts & extractHtmlCssTemplateBlock.ts` - Extracts a whole tagged templateblock
+
+  ```typescript
+  static templatef = html`
+      <div>[[this.bb]]</div> 
+      <input type="checkbox" .checked="{{this.ee}}">Value: [[this.ee]]
+      <div>[[this.bb]]</div>
+    `;
+  static style = css`
+      :host {
+          font-size: 20px;
+  }`
+  ```
+
+### 📁 Document
+
+Contains the logic for finding and processing tagged template literals.
+
+### 📁 Class
+
+Core validation and parsing classes:
+
+- `HtmlValidator` - Logic for html syntax
+
+- `CssValidator` - Logic for html syntax
+
+- `CustomElement` - The central class of the project that handles custom element processing and validation. To add custom attributes for a specific tag, please add it here in the right place in the hierarchie.
+
+```Text
+{
+  name: 'input',
+  description: 'Custom web component',
+  attributes: [
+    { name: 'a-random-valid-tag-only-for-input', description: 'Custom attribute' }
+  ]
+}, ...
+
+```
 
 ##### Autor
 

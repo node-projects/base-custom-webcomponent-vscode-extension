@@ -1,4 +1,3 @@
-
 export class TagContext {
     static ALLOWED_TAGS = new Set<string>([ // in lit plugin suchen, da wird eine funktion verwendet die alle html tags zurück gibt
 ".checked","ichbinungultig"

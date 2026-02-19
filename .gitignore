@@ -11,6 +11,9 @@ src/document/css-document
 src/document/experiments
 *.png
 out/
+demo.js
+demo.js.map
+demo.ts
 
 # User-specific files
 *.rsuser
