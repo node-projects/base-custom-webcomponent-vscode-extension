@@ -38,9 +38,13 @@ static style = css`
 }`
 ```
 
+### before activation
+
+![App Screenshot](images/preview_before_activation.png "Extension preview before activation")
+
 ### After activation
 
-![App Screenshot](preview.png "Extension preview with diagnostic")
+![App Screenshot](images/preview.png "Extension preview with diagnostic")
 
 ## Installation
 
