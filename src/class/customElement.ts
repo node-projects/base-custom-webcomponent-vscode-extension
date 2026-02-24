@@ -8,14 +8,14 @@ class CustomElement implements IHTMLDataProvider {
       description: 'Custom web component',
       attributes: [
         { name: '.checked', description: 'Custom attribute' },
-        { name: 'ein-gutiger-attribut-fuer-input', description: 'Custom attribute' }
+        { name: 'a-valid-attribut-for-input', description: 'Custom attribute' }
       ]
     },
     {
       name: 'img',
       description: 'Custom web component',
       attributes: [
-        { name: 'ein-gutiger-attribut-fuer-img', description: 'Custom attribute' }
+        { name: 'a-valid-attribut-for-img', description: 'Custom attribute' }
       ]
     }
   ];

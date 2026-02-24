@@ -1,7 +1,7 @@
 # Lit-HTML & Styled Components Extension
 
 A VS Code extension that provides syntax highlighting and diagnostic features for lit-html templates, styled-components and css-templates in JavaScript/TypeScript projects.
-This project builds on the Base-Custom-Components project.
+This project builds on the [Base-Custom-Components](https://github.com/node-projects/base-custom-webcomponent/) project.
 
 ## Features
 
@@ -45,6 +45,10 @@ static style = css`
 ### After activation
 
 ![App Screenshot](images/preview.png "Extension preview with diagnostic")
+
+- In this case, i declared ```.checked``` as a valid attribute only for ```input``` tag
+
+- I also declared ```a-valid-attribut-for-input``` attribute only valid for ```input``` tag and for comparison i also declared ```a-valid-attribut-for-img``` attribute only valid for ```img```
 
 ## Installation
 
