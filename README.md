@@ -38,6 +38,10 @@ static style = css`
 }`
 ```
 
+### After activation
+
+![App Screenshot](preview.png "Extension preview with diagnostic")
+
 ## Installation
 
 ### Prerequisites
