@@ -62,18 +62,14 @@ static style = css`
 1. Clone or download the repository
 2. Install dependencies
 
-```bash
-   npm install
-   npm run compile
-```
+    ```bash
+    npm install
+    npm run compile
+    ```
 
-3.In VS Code: Press ```F5``` to start a new Extension Development Host instance
+3. In VS Code: Press ```F5``` to start a new Extension Development Host instance
 
 ### Usage
-
-#### Commands
-
-No command is required.
 
 ### Development
 
@@ -84,6 +80,7 @@ No command is required.
 │   ├── document/                 # Syntax-highlighting-logic
 │   ├── utils/                    # Help components
 |   ├── interface/                # Required interfaces
+|   ├── images/                   # Images for README
 ```
 
 ### Dependencies
@@ -112,7 +109,6 @@ AST-Parsing: Analyzes template strings using Abstract Syntax Trees
 
 Known Limitations
 The extension is under active development
-Some experimental features are still in the experiments/ folder
 
 ## Project Structure
 
@@ -191,4 +187,4 @@ Core validation and parsing classes:
 
 ##### Autor
 
-Developed by Emmanuel Youssef as part of a practical project in Semester 5 at Kardex Holding AG.
+Developed by Emmanuel Youssef
