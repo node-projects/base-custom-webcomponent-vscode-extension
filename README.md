@@ -57,7 +57,7 @@ static style = css`
 - Visual Studio Code Version 1.108.0 or higher
 - Node.js and npm for development
 
-### From Sourcecode
+### From Source code
 
 1. Clone or download the repository
 2. Install dependencies
@@ -217,6 +217,6 @@ Core validation and parsing classes:
 
 ```
 
-##### Autor
+##### Author
 
 Developed by Emmanuel Youssef

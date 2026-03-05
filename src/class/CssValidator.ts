@@ -9,7 +9,7 @@ import { GlobalOffsets } from "../interface/IGlobalOffsets";
 
 export class CssValidator implements ICssValidator{
 
-    private CssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>
+    private cssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>
     private document: vscode.TextDocument
     private cssLanguageService:cssService.LanguageService
     diagnosticCollection: vscode.Diagnostic[]
@@ -19,14 +19,14 @@ export class CssValidator implements ICssValidator{
           document: vscode.TextDocument,
           diagnosticCollection: vscode.Diagnostic[]){
 
-            this.CssTemplateArray = CssTemplateArray;
+            this.cssTemplateArray = CssTemplateArray;
             this.document = document;
             this.diagnosticCollection = diagnosticCollection;
             this.cssLanguageService = cssService.getCSSLanguageService()
     }
 
     validate():void{
-        for (const singleBlockOfCssTemplate of this.CssTemplateArray){
+        for (const singleBlockOfCssTemplate of this.cssTemplateArray){
             this.validateBlockOfCss(singleBlockOfCssTemplate.cssTemplate)
         }
     }
@@ -57,7 +57,7 @@ export class CssValidator implements ICssValidator{
         const cssSeverity = singleDiagnostic.severity;
 
         let diagnosticSeverity: vscode.DiagnosticSeverity;
-        
+
         switch (cssSeverity) {
             case cssService.DiagnosticSeverity.Error:
                 diagnosticSeverity = vscode.DiagnosticSeverity.Error;

@@ -7,8 +7,6 @@ import { CssValidator } from "./class/CssValidator";
 import { extractHtmlTemplateBlock } from "./utils/extractHtmlTemplateBlock";
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
-// error collection of vs code
-const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
 
 function htmlValidator(
   ps: Parse5,
@@ -42,16 +40,17 @@ function cssValidator(
 export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
   
-  const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
+  // const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
+  const errorCollection = vscode.languages.createDiagnosticCollection("myExtension");
 
-  context.subscriptions.push(diagnostics);
+  context.subscriptions.push(errorCollection);
 
   vscode.window.showInformationMessage("Validator is now active");
 
   const timers = new Map<string, NodeJS.Timeout>();
 
   const supported = new Set(["typescript","javascript","typescriptreact","javascriptreact"]);
-  
+
   const schedule = (doc: vscode.TextDocument) => {
     if (!supported.has(doc.languageId)) {
       errorCollection.delete(doc.uri);
@@ -80,7 +79,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((e) => schedule(e.document)),
     vscode.workspace.onDidOpenTextDocument((doc) => schedule(doc)),
-    vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri)),
+    vscode.workspace.onDidCloseTextDocument((doc) => errorCollection.delete(doc.uri)),
     vscode.workspace.onDidChangeConfiguration((e) => {
     if (e.affectsConfiguration("html-css-template-validator")) {
     for (const doc of vscode.workspace.textDocuments) {
