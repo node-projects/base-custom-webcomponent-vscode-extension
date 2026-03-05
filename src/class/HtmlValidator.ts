@@ -77,11 +77,11 @@ export class HtmlValidator implements IHtmlValidator {
     if (attributeName === "#text") return true;
 
     const validAttributeNames = new Set(
-      htmlLanguageService.provideAttributes(tagName).map(t => t.name)
+      htmlLanguageService.provideAttributes(tagName).map(t => t.name.toLowerCase())
     );
     
     const customValidAttributeNames = new Set(
-      this.customHtmlElements.provideAttributes(tagName).map(t => t.name)
+      this.customHtmlElements.provideAttributes(tagName).map(t => t.name.toLowerCase())
     );
 
     return validAttributeNames.has(attributeName) || 
@@ -126,7 +126,7 @@ export class HtmlValidator implements IHtmlValidator {
       createVscodeDiagnostic(
         positions.globalStartOffset,
         positions.globalEndOffset,
-        `Unknown property: "${tagData.name}"`,
+        `Unknown tag: "${tagData.name}"`,
         vscode.DiagnosticSeverity.Warning,
         this.document
       )

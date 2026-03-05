@@ -44,14 +44,14 @@ export async function activate(context: vscode.ExtensionContext) {
   
   const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
 
-  
-  
   context.subscriptions.push(diagnostics);
 
   vscode.window.showInformationMessage("Validator is now active");
 
   const timers = new Map<string, NodeJS.Timeout>();
+
   const supported = new Set(["typescript","javascript","typescriptreact","javascriptreact"]);
+  
   const schedule = (doc: vscode.TextDocument) => {
     if (!supported.has(doc.languageId)) {
       errorCollection.delete(doc.uri);

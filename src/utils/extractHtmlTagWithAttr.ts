@@ -16,7 +16,7 @@ export function extractHtmlTagWithAttr(templateTag: any): ITagData {
     createTagData(singleTagData,templateTag)
   }
 
-  // Attribute + deren Positionen
+  // Attributes + their Positions
   if (templateTag.attrs && templateTag.attrs.length > 0) {
     
     for (const attr of templateTag.attrs) {

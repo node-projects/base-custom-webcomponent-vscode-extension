@@ -10,25 +10,25 @@ export function extractHtmlTemplates(code: string):ILitDataTemplate[] { // Chang
     true
   );
 
-  // Finde alle html`...` Templates
+  // Find all html`...` Templates
   const templates = findTaggedTemplates(sourceFile, ["html", "raw"]);
   
   if (!Array.isArray(templates)) {
     return [];
   }
 
-  // Extrahiere den Text jedes Templates
+  // Extract every Template Text
   return templates.map(template => {
     const templateText = template.template.getText();
-    // Entferne die umgebenden Backticks
+    // Remove the Backticks
     const content = templateText.slice(1, -1);
     
     return {
-      fullText: templateText,           // Mit Backticks: `<div>...</div>`
-      content: content,                 // Ohne Backticks: <div>...</div>
+      fullText: templateText,           // With Backticks: `<div>...</div>`
+      content: content,                 // Without Backticks: <div>...</div>
       startPos: template.getStart(),
       endPos: template.getEnd(),
-      tag: template.tag.getText()       // "html" oder "raw"
+      tag: template.tag.getText()       // "html" or "raw"
     };
   });
 }
@@ -41,25 +41,25 @@ export function extractCssTemplates(code: string):ILitDataTemplate[] { // Change
     true
   );
 
-  // Finde alle html`...` Templates
-  const templates = findTaggedTemplates(sourceFile, ["css", "raw"]);
+  // Find all css`...` Templates
+  const templates = findTaggedTemplates(sourceFile, ["css"]);
   
   if (!Array.isArray(templates)) {
     return [];
   }
 
-  // Extrahiere den Text jedes Templates
+  // Extract every Template Text
   return templates.map(template => {
     const templateText = template.template.getText();
-    // Entferne die umgebenden Backticks
+    // Remove the Backticks
     const content = templateText.slice(1, -1);
     
     return {
-      fullText: templateText,           // Mit Backticks: `<div>...</div>`
-      content: content,                 // Ohne Backticks: <div>...</div>
+      fullText: templateText,           // With Backticks: `<div>...</div>`
+      content: content,                 // Without Backticks: <div>...</div>
       startPos: template.getStart(),
       endPos: template.getEnd(),
-      tag: template.tag.getText()       // "html" oder "raw"
+      tag: template.tag.getText()       // css
     };
   });
 }

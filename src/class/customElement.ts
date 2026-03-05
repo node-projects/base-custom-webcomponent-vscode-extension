@@ -22,7 +22,7 @@ function normalizeCustomTags(raw: unknown): ITagData[] {
         }));
 
       return {
-        name: String(t.name),
+        name: String(t.name).toLowerCase(),
         description: typeof t.description === "string" ? t.description : "",
         attributes
       };
@@ -59,7 +59,7 @@ class CustomElement implements IHTMLDataProvider {
   }
 
   provideAttributes(tag: string): IAttributeData[] {
-    return this.customTags.find((t) => t.name === tag)?.attributes ?? [];
+    return this.customTags.find((t) => t.name.toLowerCase() === tag.toLowerCase())?.attributes ?? [];
   }
   
   provideValues(tag: string, attribute: string): IValueData[] {

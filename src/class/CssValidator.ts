@@ -53,7 +53,28 @@ export class CssValidator implements ICssValidator{
     }
 
     private createDiagnostic(singleDiagnostic:cssService.Diagnostic,singleBlockOfCssTemplate:CssTagTemplate,virtualDocumentCssLangServ:cssService.TextDocument){
-        const diagnosticSeverity = singleDiagnostic.severity!.valueOf as unknown as vscode.DiagnosticSeverity
+
+        const cssSeverity = singleDiagnostic.severity;
+
+        let diagnosticSeverity: vscode.DiagnosticSeverity;
+        
+        switch (cssSeverity) {
+            case cssService.DiagnosticSeverity.Error:
+                diagnosticSeverity = vscode.DiagnosticSeverity.Error;
+                break;
+            case cssService.DiagnosticSeverity.Warning:
+                diagnosticSeverity = vscode.DiagnosticSeverity.Warning;
+                break;
+            case cssService.DiagnosticSeverity.Information:
+                diagnosticSeverity = vscode.DiagnosticSeverity.Information;
+                break;
+            case cssService.DiagnosticSeverity.Hint:
+                diagnosticSeverity = vscode.DiagnosticSeverity.Hint;
+                break;
+            default:
+                diagnosticSeverity = vscode.DiagnosticSeverity.Warning;
+                break;
+        }
 
         const globalOffsets = createPositions(
             singleBlockOfCssTemplate.tag,
