@@ -10,20 +10,25 @@ import { IHtmlValidator } from "../interface/IHtmlValidator";
 
 type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
 const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
-const customHtmlElements = new CustomElement();
 
 export class HtmlValidator implements IHtmlValidator {
   
   private validTagNames: Set<string>;
   private ps: Parse5;
   private document: vscode.TextDocument;
+  private customHtmlElements: CustomElement;
   diagnosticCollection: vscode.Diagnostic[];
 
-  constructor(ps: Parse5,document: vscode.TextDocument,diagnosticCollection: vscode.Diagnostic[]) {
+  constructor(ps: Parse5,document: vscode.TextDocument,diagnosticCollection: vscode.Diagnostic[],userConfig: vscode.WorkspaceConfiguration) {
     this.ps = ps;
     this.document = document;
     this.diagnosticCollection = diagnosticCollection;
+    
+    this.customHtmlElements = new CustomElement(userConfig);
+
     this.validTagNames = new Set(htmlLanguageService.provideTags().map(t => t.name));
+      for (const t of this.customHtmlElements.provideTags()) this.validTagNames.add(t.name);
+    
   }
 
   validate(htmlTemplateArray: Array<{ htmlTemplate: HtmlTagTemplate }>): void {
@@ -76,7 +81,7 @@ export class HtmlValidator implements IHtmlValidator {
     );
     
     const customValidAttributeNames = new Set(
-      customHtmlElements.provideAttributes(tagName).map(t => t.name)
+      this.customHtmlElements.provideAttributes(tagName).map(t => t.name)
     );
 
     return validAttributeNames.has(attributeName) || 

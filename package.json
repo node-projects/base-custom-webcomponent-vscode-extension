@@ -14,6 +14,39 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Html-Css Template Validator",
+      "properties": {
+        "html-css-template-validator.customTags": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "description": "Custom tags + attributes (leer = keine Custom-Regeln).",
+          "items": {
+            "type": "object",
+            "required": ["name", "attributes"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string", "default": "" },
+              "attributes": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "required": ["name"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string", "default": "" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "grammars": [
       {
         "injectTo": [

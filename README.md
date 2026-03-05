@@ -174,14 +174,46 @@ Core validation and parsing classes:
 
 - `CustomElement` - The central class of the project that handles custom element processing and validation. To add custom attributes for a specific tag, please add it here in the right place in the hierarchie.
 
+## Add Custom Elements
+
+- `To add a custom elements:`
+
+- Search `customtags` or `Cntr + , then search customtags` then add an element with the following structure
+
+`Valid example`
+
 ```Text
-{
-  name: 'input',
-  description: 'Custom web component',
-  attributes: [
-    { name: 'a-random-valid-tag-only-for-input', description: 'Custom attribute' }
-  ]
-}, ...
+"html-css-template-validator.customTags": [
+        {
+            "name": "input",
+            "description": "demo",
+            "attributes": [
+                {"name": ".checked", "description": "demo"},
+                {"name": "a-valid-attribut-for-input", "description": "demo2"}
+        ] //Make sure to add all Attributes to the Tag and do not add single Attribute to single Tag.
+          // for each Tag is only one declaration valid do not create more than one
+        },
+
+```
+
+`Invalid example`
+
+```Text
+"html-css-template-validator.customTags": [
+        {
+            "name": "input",
+            "description": "demo",
+            "attributes": [
+                {"name": ".checked", "description": "demo"}
+        ]
+        },
+        {
+            "name": "input",
+            "description": "demo",
+            "attributes": [
+                {"name": "a-valid-attribut-for-input", "description": "demo2"}
+        ]
+        },
 
 ```
 

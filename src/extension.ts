@@ -14,13 +14,15 @@ function htmlValidator(
   ps: Parse5,
   htmlTemplateArray: Array<{ htmlTemplate: HtmlTagTemplate }>,
   document: vscode.TextDocument,
-  diagnosticCollection: vscode.Diagnostic[]
+  diagnosticCollection: vscode.Diagnostic[],
+  userConfig: vscode.WorkspaceConfiguration
 ):void
 {
   const validator = new HtmlValidator(
     ps,
     document,
     diagnosticCollection,
+    userConfig
   ).validate(htmlTemplateArray);
 }
 
@@ -41,37 +43,51 @@ export async function activate(context: vscode.ExtensionContext) {
   const ps = await import("parse5");
   
   const diagnostics = vscode.languages.createDiagnosticCollection("myExtension");
+
+  
   
   context.subscriptions.push(diagnostics);
 
   vscode.window.showInformationMessage("Validator is now active");
+
   const timers = new Map<string, NodeJS.Timeout>();
+  const supported = new Set(["typescript","javascript","typescriptreact","javascriptreact"]);
   const schedule = (doc: vscode.TextDocument) => {
-    if (timers.get(doc.uri.toString())) clearTimeout(timers.get(doc.uri.toString()));
+    if (!supported.has(doc.languageId)) {
+      errorCollection.delete(doc.uri);
+      return;
+    }
+    const key = doc.uri.toString();
+    if (timers.get(key)) clearTimeout(timers.get(key));
     timers.set
     (
-      doc.uri.toString(), setTimeout
+      key, setTimeout
       (() => 
       {
+      timers.delete(key);
       const diagnosticCollection: vscode.Diagnostic[] = [];
-      
+      const userConfig = vscode.workspace.getConfiguration("html-css-template-validator");
       const htmlTemplates = extractHtmlTemplateBlock(doc);
       if (!htmlTemplates){return}
-      htmlValidator(ps,htmlTemplates,doc,diagnosticCollection);
+      htmlValidator(ps,htmlTemplates,doc,diagnosticCollection,userConfig);
       const cssTemplates = extractCssTemplateBlock(doc)
       if(!cssTemplates){return}
       cssValidator(cssTemplates,doc,diagnosticCollection)
       
       errorCollection.set(doc.uri,diagnosticCollection)
-      }
-      )
-    )
-  }
+      },300))}
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((e) => schedule(e.document)),
     vscode.workspace.onDidOpenTextDocument((doc) => schedule(doc)),
-    vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri))
+    vscode.workspace.onDidCloseTextDocument((doc) => diagnostics.delete(doc.uri)),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+    if (e.affectsConfiguration("html-css-template-validator")) {
+    for (const doc of vscode.workspace.textDocuments) {
+      if (["typescript", "javascript", "typescriptreact", "javascriptreact"].includes(doc.languageId)) {
+        schedule(doc);
+      }}}
+    })
   );
 };
 export function deactivate() {}
