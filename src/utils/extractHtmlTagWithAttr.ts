@@ -1,5 +1,5 @@
 import {ITagData} from "../interface/ITagData"
-import * as vscode from "vscode"
+import { window } from "vscode";
 import {createTagData} from "./createTagData"
 
 export function extractHtmlTagWithAttr(templateTag: any): ITagData {
@@ -12,7 +12,7 @@ export function extractHtmlTagWithAttr(templateTag: any): ITagData {
     createTagData(singleTagData,templateTag)
     
   } else {
-    vscode.window.showErrorMessage(`didn't find a valid html tag, found: ${templateTag.nodeName}`)
+    window.showErrorMessage(`didn't find a valid html tag, found: ${templateTag.nodeName}`)
     createTagData(singleTagData,templateTag)
   }
 
@@ -34,7 +34,7 @@ export function extractHtmlTagWithAttr(templateTag: any): ITagData {
         )
       } 
       else {
-        vscode.window.showErrorMessage(`didn't find a valid html tag, found: ${attr.name}=${JSON.stringify(attr.value)}`)
+        window.showErrorMessage(`didn't find a valid html tag, found: ${attr.name}=${JSON.stringify(attr.value)}`)
       }
     }
   }

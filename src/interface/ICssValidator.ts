@@ -1,6 +1,6 @@
-import * as vscode from "vscode"
+import type { Diagnostic } from "vscode";
 
 export interface ICssValidator {
-    diagnosticCollection: vscode.Diagnostic[]
+    diagnosticCollection: Diagnostic[]
     validate():void
 }

@@ -1,5 +1,6 @@
-import * as vscode from "vscode";
-import * as htmlService from "vscode-html-languageservice";
+import type { TextDocument, Diagnostic, WorkspaceConfiguration } from "vscode";
+import { DiagnosticSeverity } from "vscode";
+import {getDefaultHTMLDataProvider} from "vscode-html-languageservice";
 import { ITagData } from "../interface/ITagData"
 import { CustomElement } from "../class/CustomElement";
 import { HtmlTagTemplate } from "../interface/IHtmlTemplate";
@@ -8,18 +9,20 @@ import { createPositions } from "../utils/createPosition";
 import { createVscodeDiagnostic } from "../utils/createVscodeDiagnostic";
 import { IHtmlValidator } from "../interface/IHtmlValidator";
 
-type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
-const htmlLanguageService = htmlService.getDefaultHTMLDataProvider();
+import * as ps from "parse5"
+type Parse5 = typeof ps;
+//type Parse5 = typeof import("parse5", { with: { "resolution-mode": "import" } });
+const htmlLanguageService = getDefaultHTMLDataProvider();
 
 export class HtmlValidator implements IHtmlValidator {
   
   private validTagNames: Set<string>;
   private ps: Parse5;
-  private document: vscode.TextDocument;
+  private document: TextDocument;
   private customHtmlElements: CustomElement;
-  diagnosticCollection: vscode.Diagnostic[];
+  diagnosticCollection: Diagnostic[];
 
-  constructor(ps: Parse5,document: vscode.TextDocument,diagnosticCollection: vscode.Diagnostic[],userConfig: vscode.WorkspaceConfiguration) {
+  constructor(ps: Parse5,document: TextDocument,diagnosticCollection: Diagnostic[],userConfig: WorkspaceConfiguration) {
     this.ps = ps;
     this.document = document;
     this.diagnosticCollection = diagnosticCollection;
@@ -105,7 +108,7 @@ export class HtmlValidator implements IHtmlValidator {
         positions.globalStartOffset,
         positions.globalEndOffset,
         `Unknown property: "${attribute.name}"`,
-        vscode.DiagnosticSeverity.Warning,
+        DiagnosticSeverity.Warning,
         this.document
       )
     );
@@ -127,7 +130,7 @@ export class HtmlValidator implements IHtmlValidator {
         positions.globalStartOffset,
         positions.globalEndOffset,
         `Unknown tag: "${tagData.name}"`,
-        vscode.DiagnosticSeverity.Warning,
+        DiagnosticSeverity.Warning,
         this.document
       )
     );

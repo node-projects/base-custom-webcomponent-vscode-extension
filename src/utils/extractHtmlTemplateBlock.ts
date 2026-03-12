@@ -1,9 +1,10 @@
 import { extractHtmlTemplates } from '../document/html-document/parse/html-tag-extractor';
 import { HtmlTagTemplate } from "../interface/IHtmlTemplate";
-import * as vscode from "vscode"
 import { ILitDataTemplate } from "../interface/ILitDataTemplate";
+import type { TextDocument } from "vscode";
+import { window } from "vscode";
 
-export function extractHtmlTemplateBlock(document: vscode.TextDocument):Array<{ htmlTemplate: HtmlTagTemplate }>| undefined{
+export function extractHtmlTemplateBlock(document: TextDocument):Array<{ htmlTemplate: HtmlTagTemplate }>| undefined{
     
   const htmlTemplates = extractHtmlTemplates(document.getText());
     
@@ -13,7 +14,7 @@ export function extractHtmlTemplateBlock(document: vscode.TextDocument):Array<{ 
     
     if (contentArrayOfHtmlTemplates.length === 0){
       
-      vscode.window.showErrorMessage(`didn't find a valid css or html template tag`)
+      window.showErrorMessage(`didn't find a valid css or html template tag`)
       
       return undefined
     }

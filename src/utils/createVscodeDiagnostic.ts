@@ -1,15 +1,17 @@
-import * as vscode from "vscode"
+import { TextDocument, DiagnosticSeverity} from "vscode";
+import type { Diagnostic as DiagnosticType }  from "vscode";
+import { Diagnostic,Range } from "vscode";
 
 export function createVscodeDiagnostic(
   globalStartOffset:number, 
   globalEndOffset: number, 
   diagnosticMessage: string, 
-  diagnosticSeverity: vscode.DiagnosticSeverity,
-  document: vscode.TextDocument
-):vscode.Diagnostic{
+  diagnosticSeverity: DiagnosticSeverity,
+  document: TextDocument
+):DiagnosticType{
                                   
-    const newDiagnostic = new vscode.Diagnostic(
-    new vscode.Range(
+    const newDiagnostic = new Diagnostic(
+    new Range(
       document.positionAt(globalStartOffset),
       document.positionAt(globalEndOffset)
     ),

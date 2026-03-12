@@ -1,12 +1,12 @@
-import * as ts from "typescript";
+import { createSourceFile, ScriptTarget } from "typescript";
 import { findTaggedTemplates } from "lit-analyzer/lib/analyze/parse/tagged-template/find-tagged-templates.js";
 import { ILitDataTemplate } from "../../../interface/ILitDataTemplate";
 
 export function extractHtmlTemplates(code: string):ILitDataTemplate[] { // Changed return types for better handling
-  const sourceFile = ts.createSourceFile(
+  const sourceFile = createSourceFile(
     "temp.ts",
     code,
-    ts.ScriptTarget.Latest,
+    ScriptTarget.Latest,
     true
   );
 
@@ -34,10 +34,10 @@ export function extractHtmlTemplates(code: string):ILitDataTemplate[] { // Chang
 }
 
 export function extractCssTemplates(code: string):ILitDataTemplate[] { // Changed return types for better handling
-  const sourceFile = ts.createSourceFile(
+  const sourceFile = createSourceFile(
     "temp.ts",
     code,
-    ts.ScriptTarget.Latest,
+    ScriptTarget.Latest,
     true
   );
 

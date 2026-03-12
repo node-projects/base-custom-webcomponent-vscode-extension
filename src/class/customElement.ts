@@ -1,5 +1,6 @@
 import { IHTMLDataProvider, ITagData, IAttributeData, IValueData } from 'vscode-html-languageservice';
-import * as vscode from "vscode"
+import {  workspace } from "vscode";
+import type {  WorkspaceConfiguration } from "vscode";
 
 type CustomTagSetting = {
   name: string;
@@ -40,8 +41,8 @@ class CustomElement implements IHTMLDataProvider {
   
   private customTags: ITagData[];
   
-  constructor(userConfig?: vscode.WorkspaceConfiguration) {
-      const cfg = userConfig ?? vscode.workspace.getConfiguration("html-css-template-validator");
+  constructor(userConfig?: WorkspaceConfiguration) {
+      const cfg = userConfig ?? workspace.getConfiguration("html-css-template-validator");
       const raw = cfg.get<unknown>("customTags", []);
       this.customTags = normalizeCustomTags(raw);
   }

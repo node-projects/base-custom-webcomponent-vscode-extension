@@ -1,16 +1,32 @@
 {
   "name": "html-css-template-validator",
   "displayName": "Html-Css Template Validator",
-  "description": "",
+  "description": "Validates HTML/CSS templates and custom tags/attributes.",
   "version": "0.0.1",
+  "publisher": "JOSEmmanuel",
+  "license": "MIT",
+  "keywords": [
+    "html",
+    "css",
+    "validator",
+    "lint"
+  ],
   "engines": {
-    "vscode": "^1.108.0"
+    "vscode": "^1.111.0"
   },
   "categories": [
     "Other"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/node-projects/base-custom-webcomponent-vscode-extension"
+  },
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascriptreact"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -24,21 +40,36 @@
           "description": "Custom tags + attributes (leer = keine Custom-Regeln).",
           "items": {
             "type": "object",
-            "required": ["name", "attributes"],
+            "required": [
+              "name",
+              "attributes"
+            ],
             "additionalProperties": false,
             "properties": {
-              "name": { "type": "string" },
-              "description": { "type": "string", "default": "" },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "default": ""
+              },
               "attributes": {
                 "type": "array",
                 "default": [],
                 "items": {
                   "type": "object",
-                  "required": ["name"],
+                  "required": [
+                    "name"
+                  ],
                   "additionalProperties": false,
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string", "default": "" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "default": ""
+                    }
                   }
                 }
               }
@@ -132,12 +163,19 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "vscode:prepublish": "npm run bundle",
+    "compile": "tsc -p ./ --noEmit false",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "publish:patch": "vsce publish patch",
+    "publish:minor": "vsce publish minor",
+    "publish:major": "vsce publish major",
+    "typecheck": "tsc -p ./ --noEmit",
+    "bundle": "node esbuild.config.mjs"
   },
   "devDependencies": {
     "@types/jsdom": "^27.0.0",
@@ -146,6 +184,8 @@
     "@types/vscode": "^1.108.1",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.3",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.52.0"
@@ -153,7 +193,7 @@
   "dependencies": {
     "lit-analyzer": "^2.0.3",
     "node-html-parser": "^7.0.2",
-    "parse5": "^8.0.0",
+    "parse5": "7.3.0",
     "vscode-css-languageservice": "^6.3.9",
     "vscode-html-languageservice": "^5.6.1"
   }

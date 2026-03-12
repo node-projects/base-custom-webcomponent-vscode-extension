@@ -1,7 +1,9 @@
 import { ICssValidator } from "../interface/ICssValidator";
-import * as vscode from "vscode"
+import type { TextDocument as TextDocumentVsCode, Diagnostic} from "vscode";
+import { Position, DiagnosticSeverity } from "vscode";
 import { CssTagTemplate } from "../interface/ICssTemplate";
-import * as cssService from "vscode-css-languageservice"
+import type {LanguageService, Diagnostic as CssDiagnostic, TextDocument as TextDocumentCss} from "vscode-css-languageservice"
+import { getCSSLanguageService, DiagnosticSeverity as  DiagnosticSeverityCss} from "vscode-css-languageservice"
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { createPositions } from "../utils/createPosition";
 import { createVscodeDiagnostic } from "../utils/createVscodeDiagnostic";
@@ -10,19 +12,19 @@ import { GlobalOffsets } from "../interface/IGlobalOffsets";
 export class CssValidator implements ICssValidator{
 
     private cssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>
-    private document: vscode.TextDocument
-    private cssLanguageService:cssService.LanguageService
-    diagnosticCollection: vscode.Diagnostic[]
+    private document: TextDocumentVsCode
+    private cssLanguageService:LanguageService
+    diagnosticCollection: Diagnostic[]
 
 
     constructor(CssTemplateArray: Array<{ cssTemplate: CssTagTemplate }>,
-          document: vscode.TextDocument,
-          diagnosticCollection: vscode.Diagnostic[]){
+          document: TextDocumentVsCode,
+          diagnosticCollection: Diagnostic[]){
 
             this.cssTemplateArray = CssTemplateArray;
             this.document = document;
             this.diagnosticCollection = diagnosticCollection;
-            this.cssLanguageService = cssService.getCSSLanguageService()
+            this.cssLanguageService = getCSSLanguageService()
     }
 
     validate():void{
@@ -45,34 +47,34 @@ export class CssValidator implements ICssValidator{
         return TextDocument.create( this.document.uri.toString(),'css',this.document.version,content)
     }
 
-    private createDiagnosticCollForLangServ(virtualDocumentCssLangServ: TextDocument):cssService.Diagnostic[]{
+    private createDiagnosticCollForLangServ(virtualDocumentCssLangServ: TextDocument):CssDiagnostic[]{
         return this.cssLanguageService.doValidation( 
             virtualDocumentCssLangServ,
             this.cssLanguageService.parseStylesheet(
             virtualDocumentCssLangServ))
     }
 
-    private createDiagnostic(singleDiagnostic:cssService.Diagnostic,singleBlockOfCssTemplate:CssTagTemplate,virtualDocumentCssLangServ:cssService.TextDocument){
+    private createDiagnostic(singleDiagnostic:CssDiagnostic,singleBlockOfCssTemplate:CssTagTemplate,virtualDocumentCssLangServ:TextDocumentCss){
 
         const cssSeverity = singleDiagnostic.severity;
 
-        let diagnosticSeverity: vscode.DiagnosticSeverity;
+        let diagnosticSeverity: DiagnosticSeverity;
 
         switch (cssSeverity) {
-            case cssService.DiagnosticSeverity.Error:
-                diagnosticSeverity = vscode.DiagnosticSeverity.Error;
+            case DiagnosticSeverityCss.Error:
+                diagnosticSeverity = DiagnosticSeverity.Error;
                 break;
-            case cssService.DiagnosticSeverity.Warning:
-                diagnosticSeverity = vscode.DiagnosticSeverity.Warning;
+            case DiagnosticSeverityCss.Warning:
+                diagnosticSeverity = DiagnosticSeverity.Warning;
                 break;
-            case cssService.DiagnosticSeverity.Information:
-                diagnosticSeverity = vscode.DiagnosticSeverity.Information;
+            case DiagnosticSeverityCss.Information:
+                diagnosticSeverity = DiagnosticSeverity.Information;
                 break;
-            case cssService.DiagnosticSeverity.Hint:
-                diagnosticSeverity = vscode.DiagnosticSeverity.Hint;
+            case DiagnosticSeverityCss.Hint:
+                diagnosticSeverity = DiagnosticSeverity.Hint;
                 break;
             default:
-                diagnosticSeverity = vscode.DiagnosticSeverity.Warning;
+                diagnosticSeverity = DiagnosticSeverity.Warning;
                 break;
         }
 
@@ -80,13 +82,13 @@ export class CssValidator implements ICssValidator{
             singleBlockOfCssTemplate.tag,
             singleBlockOfCssTemplate.pos,
             virtualDocumentCssLangServ.offsetAt(
-            new vscode.Position( 
+            new Position( 
                 singleDiagnostic.range.start.line, 
                 singleDiagnostic.range.start.character
             )
             ),
             virtualDocumentCssLangServ.offsetAt(
-            new vscode.Position( 
+            new Position( 
                 singleDiagnostic.range.end.line, 
                 singleDiagnostic.range.end.character
             )
@@ -95,7 +97,7 @@ export class CssValidator implements ICssValidator{
         this.addDiagnostic(globalOffsets,singleDiagnostic.message,diagnosticSeverity)
     }
 
-    private addDiagnostic(globalOffsets: GlobalOffsets,message: string, severity: vscode.DiagnosticSeverity){
+    private addDiagnostic(globalOffsets: GlobalOffsets,message: string, severity: DiagnosticSeverity){
         this.diagnosticCollection.push(createVscodeDiagnostic(
             globalOffsets.globalStartOffset,
             globalOffsets.globalEndOffset,

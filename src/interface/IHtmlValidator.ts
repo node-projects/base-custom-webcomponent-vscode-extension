@@ -1,7 +1,7 @@
 import { HtmlTagTemplate } from "../interface/IHtmlTemplate";
-import * as vscode from "vscode"
+import type { Diagnostic } from "vscode";
 
 export interface IHtmlValidator{
-    diagnosticCollection: vscode.Diagnostic[];
+    diagnosticCollection: Diagnostic[];
     validate(htmlTemplateArray: Array<{ htmlTemplate: HtmlTagTemplate }>): void
 }
